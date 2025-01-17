@@ -74,6 +74,20 @@ void loop() {
 
 Sure enough, all these 20 pins are able to fade the LED. These pins should be good for controlling motors and servos as well. But let's verify on a breadboard, especially servos.
 
+### Driving servos
+
+I am going to use servos to control the rotation of the arms and the head. Mechanically, the arms pose a small challenge. I can't disassmble the arm assembly any further without risking damaging the plastic. So I can't get to the axles that the arms rotate around. But I came up with a reasonable solution using the existing mechanism, not requiring the servo shaft and the arm axles to be concentric.
+
+![arm_servo](IMG_0799.jpeg)
+
+A servo normally rotates 180 degrees. But I don't necessarily need all that range. It's position is controlled with a PWM signal, whose duty cycle width determines the position. Pi Pico's servo library supports specifying the width in microseconds. So, I am going to map range `[0, 1]` to the minimum and maximum PWM widths, corresponding to the physical range I need for each servo. This way, my code only needs to specify a value between 0 and 1 and the servo will be set to the corresponding position. All the details of the servo is abstracted away.
+
+To find out the PWM width ranges, I wrote a [sketch](./servo_calibrate/) which reads a number from the serial console and outputs it to the servo. This way, I can manually enter values to move the servo and find out the minimum and maximum values.
+
+Next, I wrote a [sketch](./servo_sweep/) to sweep the servo back and forth within the range.
+
+![sweep](IMG_0797.mov)
+
 ### Driving motors with H-bridges
 
 The main motors need to be able to rotate both directions and the speed needs to be controlled. So we'll use two H-bridges, each with two PWM pins.
@@ -83,8 +97,6 @@ The main motors need to be able to rotate both directions and the speed needs to
 The eye tilt is controlled with a single shaft rotating either direction. So there's no need for an H-bridge. Instead, we should be able to control its speed by using a MOSFET and a PWM pin.
 
 ![eye title shaft](IMG_0795.jpeg)
-
-### Driving servos
 
 ## Audio
 
