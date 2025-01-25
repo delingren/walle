@@ -74,7 +74,7 @@ void loop() {
 
 Sure enough, all these 20 pins are able to fade the LED. This takes care of the eyes. These pins should be good for controlling motors and servos as well. But let's verify on a breadboard.
 
-## Driving servos
+## Controlling arms
 
 I am going to use servos to control the rotation of the arms and the head. Mechanically, the arms pose a small challenge. I can't disassmble the arm assembly any further without risking damaging the plastic. So I can't get to the axles that the arms rotate around. But I came up with a reasonable solution using the existing mechanism, not requiring the servo shaft and the arm axles to be concentric.
 
@@ -92,17 +92,35 @@ Next, I wrote a [sketch](./servo_sweep/) to sweep the servo back and forth withi
 
 ![sweep](IMG_0797.mov)
 
-Sweet! Now onto the servo for the head. Since the head assembly is heavy, I am going to use a stronger servo SG-90, a staple servo that comes with any Arduino kit.
+Sweet! Now onto the servo for the head.
 
-### Driving motors with H-bridges
+## Rotating the head
 
-The main motors need to be able to rotate both directions and the speed needs to be controlled. So we'll use two H-bridges, each with two PWM pins.
+Since the head assembly is heavy, I am going to use a stronger 9g servo SG90, a staple servo that comes with any Arduino kit. I am replacing the original plate with a 3d printed gear with mounting holes matching the original holes on the plate. The original plate also has an opening whose either end would hit a limiter when the maximum range is hit. So I have removed some teeth from a full gear to achieve the same function.
 
-### Driving one-direction motors
+![head_driving_gear](IMG_0808.jpeg)
 
-The eye tilt is controlled with a single shaft rotating either direction. So there's no need for an H-bridge. Instead, we should be able to control its speed by using a MOSFET and a PWM pin.
+Then I attach a 3d printed driving gear to the servo's arm.
+
+![driving_gear](IMG_0811.jpeg)
+
+The driving and driven gears are then meshed together.
+
+![gears_meshed](IMG_0810.jpeg)
+
+A note on generating the gears: I used the SpurGear add-in in Fusion 360 to generate them and manually customized them. The driving gear has 16 teeth and the the driven gear had 32, 9 of which were removed. The module is 1. I.e. the pitch diameters are 16mm and 32mm for both gears respectively. The backlash is 0.2mm.
+
+## Driving motors with H-bridges
+
+The main motors need to be able to rotate both directions and the speed needs to be controlled. So we'll use two H-bridges. I found this IC L293D that has two full H-bridges and can drive 600mA. It sounds exactly what I need.
+
+## Driving one-direction motors
+
+The eye tilt is controlled with a single shaft rotating either direction. So there's no need for an H-bridge. Instead, we should be able to control its speed by using a MOSFET and a PWM pin. The shaft is directly connected to a N10 DC motor.
 
 ![eye title shaft](IMG_0795.jpeg)
+
+First off, let's measure the amount of current the motor draws when powered by 5V DC.
 
 ## Audio
 
@@ -110,9 +128,17 @@ I used a [DFPlayer](https://www.dfrobot.com/product-1121.html) in the first vers
 
 So, let's see if it plays nicely with the RP2040-Zero.
 
-
 ## IR Remote Control
 
-The original toy came with a remote control but none of mine had it when I bought them. Not that I really want to use it though. Instead, I want to be able to use an existing TV remote control and make my own. Wall-E has two IR sensors, one on the shoulder and one on the back. I can either reuse them if they work or replace them with my own if needed.
+The original toy came with a remote control but none of mine had it when I bought them. Not that I really want to use it though. Instead, I want to be able to use an existing TV remote control. In addition, I want to make my own. Wall-E has two IR sensors, one on the shoulder and one on the back. I can either reuse them if they work or replace them with my own if needed.
 
-First order of business is to verify that the sensors respond my IR emitter and TV remotes.
+First order of business is to verify that the sensors respond my remote control. I have collected some remote controls from e-waste bins in the past. It's time to put them to good use. You probably have figured out by now that dumpster diving is one of my hobbies.
+
+Different manufacturers have different IR remote protocols. Many are either publicly available or has been reverse engineered. To decode the signals, I am going to use this [Arduino-IRremote library](https://github.com/Arduino-IRremote/Arduino-IRremote).
+
+I also want to be able to make my own joystick IR remote. To do that, I can either devise my own protocol, since I have full control on both sides, or piggyback on an existing one, as long as it's capable of encoding all the info I need. The IR library I use is capable of both decoding and encoding.
+
+Here's a very comprehensive tutorial on this topic:
+https://dronebotworkshop.com/ir-remotes/#SimpleSender_Example_Code
+
+
