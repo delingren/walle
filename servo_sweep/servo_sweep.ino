@@ -2,8 +2,8 @@
 
 Servo servo;
 
-constexpr int min_us = 500;
-constexpr int max_us = 2550;
+constexpr int min_us = 540;
+constexpr int max_us = 1860;
 
 void setup() {
   servo.attach(8, min_us, max_us);
@@ -16,7 +16,7 @@ void loop() {
 
   servo.writeMicroseconds(us);
   Serial.println(us);
-  delay(20);
+  delay(10);
   us += step_us;
   if (us >= max_us) {
     us = max_us;

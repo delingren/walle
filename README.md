@@ -18,10 +18,19 @@ So, here's my attempt at improving and simplifying the design. The general idea 
 1. It can play pre-recorded sounds.
 1. It can be controlled with a remote control.
 
-
-## Table of Content
+The general approach and needed materials:
+1. All the mechanical parts will be 3d printed. I use Fusion 360 for 3d modeling and FlashForge Adventure 3 Lite for printing.
+1. The central control unit will be a microcontroller.
+1. I will be using Arduino framework to code the mcu.
 
 The rest of the documentation is organized as follows.
 
-1. [Disassembly](disassembly.md)
-1. [Prototyping](prototyping.md)
+## [Disassembly](disassembly.md)
+## [Prototyping](prototyping.md)
+* [Microcontroller](mcu.md)
+* [Controlling arms](arm.md)
+* [Rotating the head](head_rotation.md)
+* [Driving motors with H-bridges](hbridge.md)
+* [Driving one-direction motors](motor.md)
+* [Audio](audio.md)
+* [IR remote control](remote.md)
