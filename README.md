@@ -33,7 +33,7 @@ The rest of the documentation is organized as follows.
 * [x] [Rotating the head](head_rotation.md)
 * [x] [Driving motors with H-bridges](hbridge.md)
 * [x] [Driving one-direction motors](motor.md)
-* [ ] [Audio](audio.md)
+* [x] [Audio](audio.md)
 * [ ] [IR remote](remote.md)
 ## Integration
 ## Custom Remote Control
