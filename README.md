@@ -1,6 +1,6 @@
 # Wall-E 2.0
 
-I bought this Wall-E toy made by Thinkway on eBay. Actually I bought a few, all partially  broken. It's pretty primitive. It can make some basic moves. But the treads cannot be independently controlled. The arms can go up and down a little too, but not independently. The head can turn. The eyes can tilt a little bit. It also has a speaker to make some sounds. When new, it came with an IR remote control. None of the ones I bought still had it.
+I bought this Wall-E toy made by Thinkway on eBay. Actually I bought a few, all partially  broken. The toy is pretty primitive. It can make some basic moves. But the treads cannot be independently controlled. The arms can go up and down a little too, but not independently. The head can turn. The eyes can tilt a little bit. It only has one motor and it's smartly connected to all those parts with a gearbox to make them move in some ways. But in general, there isn't a high degree of maneuverability. It also has a speaker to make some sounds. When new, it came with an IR remote control. None of the ones I bought still had it.
 
 ![wall-e](IMG_0779.jpeg)
 
@@ -15,6 +15,7 @@ So, here's my attempt at improving and simplifying the design. The general idea 
 1. The arms can lift and lower independently. They only have one degree of freedom. It'd be too complicated to make them do more than that.
 1. The head can turn left and right.
 1. The eyes can light up. They each have a blue LED inside.
+1. The eyesbrows can raise and lower, which is done by tilting the eyes around the center.
 1. It can play pre-recorded sounds.
 1. It can be controlled with a remote control.
 
@@ -27,10 +28,12 @@ The rest of the documentation is organized as follows.
 
 ## [Disassembly](disassembly.md)
 ## [Prototyping](prototyping.md)
-* [Microcontroller](mcu.md)
-* [Controlling arms](arm.md)
-* [Rotating the head](head_rotation.md)
-* [Driving motors with H-bridges](hbridge.md)
-* [Driving one-direction motors](motor.md)
-* [Audio](audio.md)
-* [IR remote control](remote.md)
+* [x] [Microcontroller](mcu.md)
+* [x] [Controlling arms](arm.md)
+* [x] [Rotating the head](head_rotation.md)
+* [x] [Driving motors with H-bridges](hbridge.md)
+* [x] [Driving one-direction motors](motor.md)
+* [ ] [Audio](audio.md)
+* [ ] [IR remote](remote.md)
+## Integration
+## Custom Remote Control
