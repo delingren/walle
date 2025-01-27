@@ -2,7 +2,7 @@
 
 I am going to use servos to control the rotation of the arms and the head. Mechanically, the arms pose a small challenge. I can't disassmble the arm assembly any further without risking damaging the plastic. So I can't get to the axles that the arms rotate around. But I came up with a reasonable solution using the existing mechanism, not requiring the servo shaft and the arm axles to be concentric.
 
-![arm_servo](IMG_0799.jpeg)
+![arm_servo](./media/IMG_0799.jpeg)
 
 I am using a 5g servo WK-P0050 that I bought from [Amazon](https://www.amazon.com/gp/product/B09TKLQ44L). It's not available there anymore but can be found on AliExpress and other sites.
 
@@ -68,6 +68,6 @@ void loop() {
 }
 ```
 
-![sweep](IMG_0797.mov)
+![sweep](./media/IMG_0797.mov)
 
 Sweet! Now onto the servo for the head.

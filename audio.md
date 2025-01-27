@@ -2,7 +2,7 @@
 
 I used a [DFPlayer](https://www.dfrobot.com/product-1121.html) in the first version and thought it was a bit expensive (~$20 at the time). But the price seems to have come down quite a bit. AliExpress even has some clones that costs only $1 a piece. It doesn't have internal flash. Instead, it reads from microSD cards. I have quite a few of microSD cards salvaged from all sorts of electronics found in e-waste bins. There are some boards out there that come with internal storage. But since this one works fine and is rather cheap, I didn't bother with alternatives.
 
-So, let's see if it plays nicely with the RP2040-Zero. The board comes with an Arduino [library](https://github.com/DFRobot/DFRobotDFPlayerMini). The wiring is rather simple. You just need to provide it with power and connect it with a UART port, which I'm using `Serial1` on Pi Pico (pins 0 and 1 by default), and connect the speaker to the output pins. There isn't much to it. Then I loaded a sketch to play all 10 audio files on the SD card.
+So, let's see if it plays nicely with the RP2040-Zero. The board comes with an Arduino [library](https://github.com/DFRobot/DFRobotDFPlayerMini). The wiring is rather simple. You just need to provide it with power and connect it with a UART port, which I'm using `Serial1` on Pi Pico (pins 0 and 1 by default), and connect the speaker to the output pins. There isn't much to it. Then I loaded a [sketch](./audio_loop/) to play all 10 audio files on the SD card in a loop.
 
 ```
 #include <DFRobotDFPlayerMini.h>
