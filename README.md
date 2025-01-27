@@ -27,7 +27,7 @@ The general approach and needed materials:
 The rest of the documentation is organized as follows.
 
 * [Disassembly](disassembly.md)
-* [Prototyping](prototyping.md)
+* Prototyping
   - [Microcontroller](mcu.md)
   - [Controlling arms](arm.md)
   - [Rotating the head](head_rotation.md)
