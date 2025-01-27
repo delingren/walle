@@ -26,15 +26,16 @@ The general approach and needed materials:
 
 The rest of the documentation is organized as follows.
 
-## [Disassembly](disassembly.md)
-## [Prototyping](prototyping.md)
-* [x] [Microcontroller](mcu.md)
-* [x] [Controlling arms](arm.md)
-* [x] [Rotating the head](head_rotation.md)
-* [x] [Driving motors with H-bridges](hbridge.md)
-* [x] [Driving one-direction motors](motor.md)
-* [x] [Audio](audio.md)
-* [x] [IR remote receiver](remote_receiver.md)
-## Integration
+* [Disassembly](disassembly.md)
+* [Prototyping](prototyping.md)
+  - [Microcontroller](mcu.md)
+  - [Controlling arms](arm.md)
+  - [Rotating the head](head_rotation.md)
+  - [Driving motors with H-bridges](hbridge.md)
+  - [Driving one-direction motors](motor.md)
+  - [Audio](audio.md)
+  - [IR remote receiver](remote_receiver.md)
 
-## Custom Remote Control
+* [Integration](integration.md)
+
+* Custom Remote Control
