@@ -7,14 +7,13 @@ int file_count = 10;
 void setup() {
   player.begin();
   delay(200);
-  player.setVolume(8);
+  player.setVolume(20);
 }
 
 void loop() {
   static int index = 1;
   DY::play_state_t state = player.checkPlayState();
-  if (((int) state) == 0) {
-    Serial.println(index);
+  if (state == DY::play_state_t::Stopped) {
     player.playSpecified(index);
     index++;
     if (index > file_count) {
