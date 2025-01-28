@@ -19,6 +19,7 @@ The general approach and necessary materials and tools:
 1. The central control unit will be a microcontroller.
 1. I will be using Arduino framework to code the mcu.
 1. Misc electronic components that will be described in details in this document. All can be found on Amazon or AliExpress.
+1. Misc small screws, also found on Amazon or AliExpress.
 1. Misc tools such as a soldering station and precision screw drivers and drills.
 
 The rest of the documentation is organized as follows.
