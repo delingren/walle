@@ -82,12 +82,8 @@ void loop() {
 }
 ```
 
-It seems to work fine. 
+It seems to work fine. So I may go with this one for its low cost and simplicity, since it requires no SD card. A few things worth mentioning:
 
-![audio](./media/IMG_0823.mov)
-
-So I may go with this one for its low cost and simplicity, since it requires no SD card. A few things worth mentioning:
-
-1. It requires three 10K Ohm resistors to configure it to UART mode.
+1. It requires three 10K Ohm resistors to configure it as UART mode.
 1. It comes with a micro USB port for accessing its filesystem on the flash. It might be an isolated incident but when I copied files from a Mac, the file system was somehow corrupted. I later formatted it and copied the same files from a Windows box and everything was fine.
 1. The file names need to be in the format of `ddddd.mp3` where `d` is a digit.
