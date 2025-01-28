@@ -37,3 +37,5 @@ The rest of the documentation is organized as follows.
 * [Integration](integration.md)
 
 * Custom Remote Control
+
+![schematic](./schematic.svg)
