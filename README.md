@@ -36,6 +36,10 @@ The rest of the documentation is organized as follows.
 
 * [Integration](integration.md)
 
-* Custom Remote Control
+* [Custom Remote Control](remote_transmitter.md)
 
-![schematic](./schematic.svg)
+* [Firmware](firmware.md)
+
+## Schematic
+
+![schematic](schematic.svg)
