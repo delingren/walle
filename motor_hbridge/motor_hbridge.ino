@@ -1,4 +1,4 @@
-int left1 = 9;
+int left1 = 11;
 int left2 = 10;
 int right1 = 12;
 int right2 = 13;
