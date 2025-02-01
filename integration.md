@@ -19,3 +19,5 @@ I managed to solder everything in the lower part onto a 50mmx70mm perf board. It
 ![lower_pcb](./media/IMG_0357.jpeg)
 
 The PCB is then mounted to the chasis using a 3D printed mount.
+
+![mounted_pcb](./media/IMG_0828.jpeg)
