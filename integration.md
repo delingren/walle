@@ -21,3 +21,17 @@ I managed to solder everything in the lower part onto a 50mmx70mm perf board. It
 The PCB is then mounted to the chasis using a 3D printed mount.
 
 ![mounted_pcb](./media/IMG_0828.jpeg)
+
+Now the upper part. I want to have a neat interface between the upper part and the lower part for easy assembly. So I use a small PCB as a hub and plug everything in the upper part into its pin headers. The PCB has a power bus connected to the switched power source. Then I use a flat ribbon cable to connect all the logic signals. The two IR receivers' signals are combined on the PCB and fed to the MCU via one pin. The MOSFET for the eye tilter motor is also integrated to the PCB. Here are the connections.
+
+1. Eye tilt motor - GPIO 2 
+2. IR receiver, front - GPIO 3
+3. Eye, left - GPIO 4
+4. Eye, right - GPIO 5
+5. Arm, right - GPIO 6
+6. Head - GPIO 7
+7. Push button - GPIO 8
+8. Arm, left - GPIO 9
+9. IR receiver, back - GPIO 3
+
+![upper_pcb](./media/IMG_0844.jpeg)

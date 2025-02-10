@@ -40,7 +40,33 @@ Protocol: 10
 Code: 0
 ```
 
-Looks like code `0` is the repeat. We could use it to distinguish between a short press and a long press. Protocol `10` represents Onkyo, which is probably the OEM for TiVo.
+The particular remote I want to use is a Roku remote. It seems to use NEC and NEC2 protocols. All repeats are NEC2 and all initial presses are NEC. I don't need or want repeats. So I'll just decode NEC (8). Here's the list of the codes for all the buttons, which will be used in the decoding logic.
+
+* Power: 3893872618
+* Back: 2573649898
+* Home: 4228106218
+* Up: 3860449258
+* Left: 3776890858
+* OK: 3576350698
+* Right: 3526215658
+* Down: 3425945578
+* Repeat: 2272839658
+* Sleep: 2640496618
+* Star: 2657208298
+* Rewind: 3409233898
+* Pause: 3008153578
+* F. Fwd: 2857748458
+* Netflix: 2907883498
+* Amazon: 3024865258
+* Hulu: 2991441898
+* Disney: 4077701098
+* Vudu: 4144547818
+* YouTube: 2841036778
+* HBO: 2974730218
+* Sling: 4177971178
+* Vol Up: 4027566058
+* Vol Down: 4010854378
+* Mute: 3743467498
 
 A couple of notes:
 * It looks like the receivers have no problem with 6V DC. So I am going to connect them directly to the power source. They are dirt cheap, so no biggie if I blow up a couple.

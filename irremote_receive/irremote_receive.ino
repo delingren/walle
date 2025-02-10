@@ -1,9 +1,8 @@
-#define DECODE_ONKYO
 #include <IRremote.hpp>
 
 void setup() {
   Serial.begin(115200);
-  IrReceiver.begin(4, false);
+  IrReceiver.begin(3, false);
 }
 
 void loop() {
