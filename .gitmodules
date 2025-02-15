@@ -1,3 +1,6 @@
 [submodule "third_party/dyplayer"]
 	path = third_party/dyplayer
 	url = https://github.com/SnijderC/dyplayer.git
+[submodule "third_party/Arduino-IRremote"]
+	path = third_party/Arduino-IRremote
+	url = https://github.com/Arduino-IRremote/Arduino-IRremote.git
