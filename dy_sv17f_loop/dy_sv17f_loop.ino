@@ -11,7 +11,7 @@ void setup() {
 }
 
 void loop() {
-  static int index = 1;
+  static int index = 2;
   DY::play_state_t state = player.checkPlayState();
   if (state == DY::play_state_t::Stopped) {
     player.playSpecified(index);

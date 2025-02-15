@@ -25,15 +25,15 @@ Now the upper part. I want to have a neat interface between the upper part and t
 
 1. Eye tilt motor - GPIO 2 
 2. IR receiver, front - GPIO 3
-3. Eye, left - GPIO 4
-4. Eye, right - GPIO 5
-5. Arm, right - GPIO 6
-6. Head - GPIO 7
-7. Push button - GPIO 8
-8. Arm, left - GPIO 9
+3. Eye, right - GPIO 4
+4. Eye, left - GPIO 5
+5. Head - GPIO 6
+6. Arm, right - GPIO 7
+7. Arm, left - GPIO 8
+8. Push button - GPIO 9
 9. IR receiver, back - GPIO 3
 
-![upper_pcb](./media/IMG_0844.jpeg)
+<!-- ![upper_pcb](./media/IMG_0844.jpeg) -->
 
 ## Mechanics
 
@@ -43,13 +43,19 @@ For turning the head and tilting the eyes, I already described the mechanism [he
 
 ## Calibration and debugging
 
-To interact with the MCU after everything is mounted and connected, I made a USB-C cable without the +5V wire. This way, I can power everything with an external power source instead of the computer's USB hub. Instead of connecting the power input to the battery case, I leave the battery case unassembled and power it with a bench power. This way, I can leave the back open for easier debugging.
+Before working on the final sketch, I am going through the following steps to make sure all parts are functioning as expected.
 
-Before working on the final sketch, I am going through the following steps to make sure all parts are functioning.
+For the upper part:
 
-1. Verify eye LEDs. I just use 
+1. Verify eye LEDs
 1. Verify IR remote receiver
 1. Verify eye tilter motor
 1. Verify push button
 1. Verify arm and head servos
 1. Calibrate servos to determine the limits
+
+For the lower part:
+
+1. Verify both DC motors can turn both directions and the speed can be controlled with PWM pins
+
+To interact with the MCU after everything is mounted and connected, I made a USB-C cable without the +5V wire. This way, I can power everything with an external power source instead of the computer's USB hub. Instead of connecting the power input to the battery case, I leave the battery case unassembled and power it with a bench power. This way, I can leave the back open for easier debugging.

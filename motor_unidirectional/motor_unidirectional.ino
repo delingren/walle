@@ -1,10 +1,12 @@
+const int pin = 2;
+
 void setup() {
-  pinMode(14, OUTPUT);
+  pinMode(pin, OUTPUT);
 }
 
 void loop() {
-  digitalWrite(14, HIGH);
+  digitalWrite(pin, HIGH);
   delay(3000);
-  digitalWrite(14, LOW);
+  digitalWrite(pin, LOW);
   delay(1000);
 }

@@ -17,4 +17,9 @@ We can of course define other types of animations. But this list should be enoug
 1. If an animation has reached its target value, we remove it from the list.
 1. We also read input from all the sources (remote control and pushbutton) and queue animations as needed.
 
+### Libraries
+* DYPlayer
+* IRRemote
+* Servo. This is part of RP2040 board SDK and it uses PIO instead of PWM. There is no need to enlist it as a submodule.
+
 ## Remote Control
