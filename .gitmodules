@@ -1,0 +1,3 @@
+[submodule "third_party/dyplayer"]
+	path = third_party/dyplayer
+	url = https://github.com/SnijderC/dyplayer.git
