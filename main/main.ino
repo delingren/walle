@@ -21,8 +21,8 @@ constexpr uint8_t pinArmL = 7;
 constexpr uint8_t pinArmR = 8;
 constexpr uint8_t pinMotorL1 = 10;
 constexpr uint8_t pinMotorL2 = 11;
-constexpr uint8_t pinMotorR1 = 10;
-constexpr uint8_t pinMotorR2 = 11;
+constexpr uint8_t pinMotorR1 = 12;
+constexpr uint8_t pinMotorR2 = 13;
 
 // Servo limits
 constexpr int minArmL = 2200;
