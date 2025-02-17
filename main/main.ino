@@ -643,22 +643,21 @@ void loop() {
         break;
       }
     }
+  }
 
-    if (isIdling()) {
-      leftTread.setValue(0);
-      rightTread.setValue(0);
+  if (isIdling()) {
+    leftTread.setValue(0);
+    rightTread.setValue(0);
 
-      constexpr unsigned long breathingCycle = 3600;
-      unsigned long idleDuration =
-          (millis() - millisIdleStart) % breathingCycle;
+    constexpr unsigned long breathingCycle = 3600;
+    unsigned long idleDuration = (millis() - millisIdleStart) % breathingCycle;
 
-      if (idleDuration < breathingCycle / 2.0) {
-        breathingValue = 1.0 - idleDuration / (breathingCycle / 2.0);
-      } else {
-        breathingValue = -1.0 + idleDuration / (breathingCycle / 2.0);
-      }
-
-      setIdleBreathing();
+    if (idleDuration < breathingCycle / 2.0) {
+      breathingValue = 1.0 - idleDuration / (breathingCycle / 2.0);
+    } else {
+      breathingValue = -1.0 + idleDuration / (breathingCycle / 2.0);
     }
+
+    setIdleBreathing();
   }
 }
