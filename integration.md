@@ -28,8 +28,8 @@ Now the upper part. I want to have a neat interface between the upper part and t
 3. Eye, right - GPIO 4
 4. Eye, left - GPIO 5
 5. Head - GPIO 6
-6. Arm, right - GPIO 7
-7. Arm, left - GPIO 8
+6. Arm, left - GPIO 7
+7. Arm, right - GPIO 8
 8. Push button - GPIO 9
 9. IR receiver, back - GPIO 3
 

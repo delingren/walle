@@ -1,8 +1,8 @@
 # Firmware
 
-I'm using Arduino framework for both the Wall-E and remote control sides.
+There are two independent parts. One for the main toy and one for the remote control. I'm using Arduino framework for both.
 
-## Wall-E
+## Main
 
 The firmware is relatively straight-forward. One thing worth mentioning is animation. When we recieve a command, such as turning the head, we want the operation to be rather smooth. So, instead of setting the position immediately, we animate the transition to the target position. This also applies to the speed of the motors as well as the brightness of the LEDs. So I am defining an `Animatable` class and keep a list of ongoing animations at any moment.
 
@@ -17,9 +17,8 @@ We can of course define other types of animations. But this list should be enoug
 1. If an animation has reached its target value, we remove it from the list.
 1. We also read input from all the sources (remote control and pushbutton) and queue animations as needed.
 
-### Libraries
-* DYPlayer
-* IRRemote
-* Servo. This is part of RP2040 board SDK and it uses PIO instead of PWM. There is no need to enlist it as a submodule.
-
 ## Remote Control
+
+### Libraries
+
+Instead of relying on Arduino IDE's library manager, I enlisted DYPlayer and IRRemote libraries as submodules and froze them at the current version. So that it's more self contained and resistant to future breaking changes to these libraries. The Servo library, however, is part of RP2040 board SDK which uses PIO instead of PWM. There is no need to enlist it as a submodule, unless I also enlist the whole SDK, which is unnecessarily complicated.
