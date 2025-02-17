@@ -33,7 +33,7 @@ Now the upper part. I want to have a neat interface between the upper part and t
 8. Push button - GPIO 9
 9. IR receiver, back - GPIO 3
 
-<!-- ![upper_pcb](./media/IMG_0844.jpeg) -->
+![upper_pcb](./media/IMG_0844.jpeg)
 
 ## Mechanics
 
