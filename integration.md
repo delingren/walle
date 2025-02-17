@@ -52,7 +52,9 @@ For the upper part:
 1. Verify eye tilter motor
 1. Verify push button
 1. Verify arm and head servos
-1. Calibrate servos to determine the limits
+1. Calibrate servos to determine their limits
+
+![upper](./media/IMG_0869.mov)
 
 For the lower part:
 
