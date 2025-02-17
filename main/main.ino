@@ -342,6 +342,7 @@ Led rightEye(pinEyeLedR);
 PushButton pushButton(pinPushButton);
 
 DY::Player audioPlayer(&Serial1);
+AudioQueue AudioQueue::audioQueue(audioPlayer);
 
 static unsigned long millisIdleStart;
 float breathingValue = 1;
@@ -384,13 +385,13 @@ void demo() {
 
 void play_next_audio() {
   constexpr int audio_file_count = 10;
-  static int index = 1;
+  static int index = 2;
   index++;
   if (index > audio_file_count) {
     index = 1;
   }
-  // AudioQueue::queueDelay(200);
-  // AudioQueue::queuePlay(index);
+  AudioQueue::queueDelay(200);
+  AudioQueue::queuePlay(index);
 }
 
 void stop() {
@@ -528,6 +529,8 @@ void setup() {
   delay(200);
   audioPlayer.setVolume(15);
 
+  audioPlayer.playSpecified(2);
+
   // Set up push button
   pushButton.begin();
 
@@ -549,6 +552,7 @@ void setup() {
 
 void loop() {
   Animatable::updateFrame();
+  AudioQueue::updateFrame();
 
   if (pushButton.isPushed()) {
     resetIdleCount();
