@@ -42,6 +42,8 @@ Code: 0
 
 The particular remote I want to use is a Roku remote. It seems to use NEC and NEC2 protocols. All repeats are NEC2 and all initial presses are NEC. I don't need or want repeats. So I'll just decode NEC (8). Here's the list of the codes for all the buttons, which will be used in the decoding logic.
 
+![remote](./media/IMG_0846.jpeg)
+
 * Power: 3893872618
 * Back: 2573649898
 * Home: 4228106218
