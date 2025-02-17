@@ -54,7 +54,7 @@ For the upper part:
 1. Verify arm and head servos
 1. Calibrate servos to determine their limits
 
-![upper](./media/IMG_0869.mov)
+![upper](./media/IMG_0870.mov)
 
 For the lower part:
 
