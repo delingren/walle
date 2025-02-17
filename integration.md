@@ -62,4 +62,4 @@ For the lower part:
 
 To interact with the MCU after everything is mounted and connected, I made a USB-C cable without the +5V wire. This way, I can power everything with an external power source instead of the computer's USB hub. Instead of connecting the power input to the battery case, I leave the battery case unassembled and power it with a bench power. This way, I can leave the back open for easier debugging.
 
-![lower](./media/IMG_0872.mov)
+![lower](./media/IMG_0873.mov)
