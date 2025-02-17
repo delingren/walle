@@ -4,7 +4,7 @@ The original toy came with a remote control but none of mine had it when I bough
 
 First order of business is to verify that the sensors respond my remote control. I have collected some remote controls from e-waste bins in the past. It's time to put them to good use. You probably have figured out by now that dumpster diving is one of my hobbies. Different manufacturers have different IR remote protocols. Many are either publicly available or has been reverse engineered. Here's a very [comprehensive tutorial](https://dronebotworkshop.com/ir-remotes) on this topic. To decode the signals, I am going to use this [Arduino-IRremote library](https://github.com/Arduino-IRremote/Arduino-IRremote). There are some other libraries available for Arduino.
 
-First, I wired up a receiver and checked the waveform with a oscilloscope.
+First, I wired up a receiver and checked the waveform with an oscilloscope.
 
 ![oscilloscope](./media/IMG_0820.mov)
 
