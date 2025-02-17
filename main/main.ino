@@ -25,10 +25,10 @@ constexpr uint8_t pinMotorR1 = 10;
 constexpr uint8_t pinMotorR2 = 11;
 
 // Servo limits
-constexpr int minArmL = 2500;
-constexpr int maxArmL = 500;
-constexpr int minArmR = 500;
-constexpr int maxArmR = 2500;
+constexpr int minArmL = 2200;
+constexpr int maxArmL = 450;
+constexpr int minArmR = 700;
+constexpr int maxArmR = 2450;
 constexpr int minHead = 600;
 constexpr int maxHead = 2000;
 
