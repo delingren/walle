@@ -8,7 +8,7 @@ int max_us = 5000;
 void setup() {
   Serial.begin();
   servo.attach(8, min_us, max_us);
-  servo.writeMicroseconds(1500);
+  servo.writeMicroseconds(600);
 }
 
 void loop() {
