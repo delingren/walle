@@ -24,7 +24,7 @@ constexpr uint8_t pinMotorL2 = 11;
 constexpr uint8_t pinMotorR1 = 12;
 constexpr uint8_t pinMotorR2 = 13;
 
-// Servo limits
+// Servo limits, in terms of pulse width in microseconds
 constexpr int minArmL = 2200;
 constexpr int maxArmL = 450;
 constexpr int minArmR = 700;
@@ -153,8 +153,10 @@ public:
     Animatable::setValue(value);
     uint16_t us = static_cast<uint16_t>(value * static_cast<float>(max_) +
                                         (1 - value) * static_cast<float>(min_));
-    // attach() needs to be called after setup() has begun. so we can't do it in
-    // the constructor.
+    // Specific to RP2040, since the Servo library uses PIO, attach() needs to
+    // be called after setup() has begun. so we can't do it in the constructor.
+    // For another MCU, we can most likely move this to the constructor and get
+    // rid of pin_
     if (!servo_.attached()) {
       if (max_ > min_) {
         servo_.attach(pin_, min_, max_);
@@ -390,7 +392,7 @@ void play_next_audio() {
   if (index > audio_file_count) {
     index = 1;
   }
-  AudioQueue::queueDelay(200);
+  AudioQueue::queueDelay(100);
   AudioQueue::queuePlay(index);
 }
 
@@ -524,13 +526,6 @@ void setup() {
   // Set up serial for debugging
   Serial.begin(115200);
 
-  // Set up audio player
-  audioPlayer.begin();
-  delay(200);
-  audioPlayer.setVolume(15);
-
-  audioPlayer.playSpecified(2);
-
   // Set up push button
   pushButton.begin();
 
@@ -546,6 +541,15 @@ void setup() {
   rightTread.setValue(0);
   leftEye.setValue(1);
   rightEye.setValue(1);
+
+  // Set up audio player and play "wall-e"
+  // The dyplayer needs a little time to be ready after powering up.
+  // A 250ms delay seems to be pretty reliable.
+  delay(250);
+  audioPlayer.begin();
+  audioPlayer.setVolume(15);
+  // For some reason, the dyplayer reverses tracks 1 and 2.
+  audioPlayer.playSpecified(2);
 
   resetIdleCount();
 }
@@ -640,6 +644,16 @@ void loop() {
         break;
       case 4177971178: // Sling
         right_arm_down();
+        break;
+
+      case 4027566058: // Vol Up
+        AudioQueue::queuePlay(2);
+        break;
+      case 4010854378: // Vol Down
+        AudioQueue::queuePlay(3);
+        break;        
+      case 3743467498: // Mute
+        AudioQueue::queuePlay(1);
         break;
       }
     }
