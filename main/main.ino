@@ -382,7 +382,7 @@ void demo() {
   rightEye.queueAnimations(eyeAnimation);
 
   AudioQueue::queueDelay(2000);
-  AudioQueue::queuePlay(1);
+  AudioQueue::queuePlay(2);
 }
 
 void play_next_audio() {
@@ -544,10 +544,12 @@ void setup() {
 
   // Set up audio player and play "wall-e"
   // The dyplayer needs a little time to be ready after powering up.
-  // A 250ms delay seems to be pretty reliable.
-  delay(250);
+  // A 300ms delay seems to be pretty reliable.
+  delay(300);
   audioPlayer.begin();
+  delay(50);
   audioPlayer.setVolume(15);
+  delay(50);
   // For some reason, the dyplayer reverses tracks 1 and 2.
   audioPlayer.playSpecified(2);
 
@@ -651,7 +653,7 @@ void loop() {
         break;
       case 4010854378: // Vol Down
         AudioQueue::queuePlay(3);
-        break;        
+        break;
       case 3743467498: // Mute
         AudioQueue::queuePlay(1);
         break;
