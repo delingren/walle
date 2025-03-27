@@ -165,8 +165,6 @@ public:
       }
     }
     servo_.writeMicroseconds(us);
-    Serial.print("setting value ");
-    Serial.println(us);
   }
 
 private:
