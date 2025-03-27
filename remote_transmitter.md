@@ -66,6 +66,9 @@ Connections to MCU:
 * `X1`, `Y1`, `X2`, `Y2` ↔ `A2`, `A3`, `A4`, `A5`
 * `J1`, `J2` ↔ `A0`, `A1`
 
+And,
+* IR LED: `10`
+
 ## Control Protocol
 
 Each transmission contains 32 bits, which should be more than enough for a low speed application. Here's the format of the packets.
