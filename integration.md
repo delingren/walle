@@ -37,13 +37,17 @@ Now the upper part. I want to have a neat interface between the upper part and t
 
 ## Mechanics
 
-For the main drive train, I am mounting the DC motors directly the to driving wheels, using 3d printed parts. The motors are connected to the outputs of the H-bridges.
+For the main drive train, I am mounting the DC motors directly the to driving wheels, using 3d printed parts. The motors are connected to the outputs of the H-bridges. I was originally planning on using a couple of N20 5V 100rpm motors. But it turned out that they don't have enough torque. There is too much friction in the system (let's face it, none of the parts are precisesly made and positioned, and there's no lubrication at all). So I ended up using two N30 6V 75rpm versions. They seemed to work fine.
+
+![drive_train](./media/IMG_0816.jpeg)
 
 For turning the head and tilting the eyes, I already described the mechanism [here](./head_rotation.md) and [here](./motor.md). The servos for driving the arms are described [here](./arm.md). Altogether, I am mounting the three servos and the DC motor on an upper platform.
 
+![servos](./media/IMG_0897.jpeg)
+
 ## Calibration and debugging
 
-Before working on the final sketch, I am going through the following steps to make sure all parts are functioning as expected.
+Before working on the final sketch, I am going through the following steps to make sure all parts are mechanically functioning as expected.
 
 For the upper part:
 
@@ -63,3 +67,10 @@ For the lower part:
 To interact with the MCU after everything is mounted and connected, I made a USB-C cable without the +5V wire. This way, I can power everything with an external power source instead of the computer's USB hub. Instead of connecting the power input to the battery case, I leave the battery case unassembled and power it with a bench power. This way, I can leave the back open for easier debugging.
 
 ![lower](./media/IMG_0873.mov)
+
+Finally, before closing it up, I am exposing a USB-C port for uploading sketches and debugging through the serial port. To do this, I cut a hole at the bottom of the chasis, and mounted a panel-mount USB-C port (bought from AliExpress). Then soldered a male USB-C plug on it. Note that I am not connecting the V+ wire, to avoid accidental current backflow to the computer. So it needs to be powered by the batteries when uploading the sketch.
+
+![bottom_usb](./media/IMG_0888.jpeg)
+![top_usb](./media/IMG_0887.jpeg)
+
+Now all the mechanical parts are in placed and properly assembled. It's time to play with the firmware.
