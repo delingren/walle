@@ -9,13 +9,55 @@ To do that, there are a few things I need to figure out.
 1. The microcontroller. The PS/2 controller is powered by 2 AAA batteries, I want to be able to reuse the power source. So I need an mcu that can be powered at 3V. First thing that came to my mind is ATmega 328. I have a couple of them and they are 8MHz versions.
 
 ## Microcontroller
-As mentioned before, I intend to use an 8MHz ATmega328 devboard (Arduino Pro Mini clones), which should be able to run at 3V comofortably. So I am going to prototype everything on that board.
-
-### Power saving
-The MCU itself can be powered by 1.8-5.5V. And since I'm using batteries, I don't need the regulator. Removing it will increase the battery life and eliminate the voltage drop. 
+As mentioned before, I intend to use an 8MHz ATmega328 devboard (Arduino Pro Mini clones), which should be able to run at 3V comofortably. So I am going to prototype everything on that board. One small caveat about working with this board is that ATmega328 comes in two versions: 8Mhz and 16MHz. When programming with Arduino IDE or CLI, we need to choose the correct frequency. Otherwise, the code will still run, but the timing is all messed up. Anything that relies on the frequency will not work properly. E.g. the serial console or the IR transmitter.
 
 ## IR transmitter
-I have some generic 940 nm IR LEDs from Amazon and I intend to use one. Since I only need short distance transmissions, I should be able to use an MCU pin to control it directly, without a BJT.
+I have some generic 940 nm IR LEDs from Amazon and I intend to use one. I can probably control it directly using an MCU pin. But amplifying with a BJT will definitely improve the range.
+
+So my first step is to make sure the MCU and the IR transmitter are capable of running on a 3V DC power supply. So I loaded up a simple sketch to send a code every half a second:
+
+```
+#include <IRremote.hpp>
+
+void setup() {
+  IrSender.begin(9);
+}
+
+void loop() {
+  IrSender.sendNECRaw(0x2A);
+  delay(500);
+}
+```
+
+On the receiver side, I read the code from an IR receiver and dump the code:
+
+```
+#include <IRremote.hpp>
+
+void setup() {
+  Serial.begin(115200);
+  IrReceiver.begin(3, false);
+}
+
+void loop() {
+  if (IrReceiver.decode()) {
+    uint32_t code = IrReceiver.decodedIRData.decodedRawData;
+    decode_type_t protocol = IrReceiver.decodedIRData.protocol;
+    Serial.print("Protocol: ");
+    Serial.println(protocol);
+    Serial.print("Code: ");
+    Serial.println(code);
+    IrReceiver.resume();
+  }
+}
+```
+
+Note that `sendNECRaw()` sends codes of protocol `10(ONKYO)`. And the raw code is 16 bits, which is more than enough to encode joystick positions and key presses.
+
+![ir_prototype](./media/IMG_0908.jpeg)
+
+### Power saving
+The MCU itself can be powered by 1.8-5.5V DC. And since I'm using batteries, I don't need the regulator. Removing it will increase the battery life and eliminate the voltage drop. The power indicator LED can be removed too.
 
 ## Controller Wiring
 
@@ -58,7 +100,7 @@ Outgoing wires:
   - `X1`, `Y1`, `X2`, `Y2`, `J1`, `J2` (to MCU)
 
 Connections to MCU:
-* `BAT+` ↔ `RAW`
+* `BAT+` ↔ `Vcc`
 * `GND` ↔ `GND`
 * `Select`, `Mode`, `Start` ↔ `11`, `12`, `13`
 * `Rows 1-2` ↔ `2`, `3`
