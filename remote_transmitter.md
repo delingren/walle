@@ -77,12 +77,15 @@ The PS2 controller has tow major PCBs. PCB1 contains the battery box, the IC and
 
 Plan:
 
-* Wire `Ax`, `Bx`, `Lx`, and `Lx` as a 2x6 matrix (8 pins)
+* Wire `Ax`, `Bx`, `Lx`, and `Rx` as a 2x6 matrix (8 pins) like this:
+
+  |           | col 1 | col 2 | col 3 | col 4 | col 5 | col 6 |
+  |-----------|-------|-------|-------|-------|-------|-------|
+  | **row 1** |  `AL` |  `AU` |  `AR` |  `AD` |  `L1` |  `L2` |
+  | **row 2** |  `BL` |  `BU` |  `BR` |  `BD` |  `R2` |  `R2` |
+
 * All other buttons each uses a separate pin: `Select`, `Mode`, `Start`, `J1`, `J2` (5 pins)
 * Wire joystick axles to analog pins (4 pins)
-
-* Rows(2): Common A, Common B
-* Cols(6): `Ax`/`Bx`(4), `Lx`/`Rx`(2)
 
 Therefore, we need to bridge:
 
@@ -102,10 +105,10 @@ Outgoing wires:
 Connections to MCU:
 * `BAT+` ↔ `Vcc`
 * `GND` ↔ `GND`
-* `Select`, `Mode`, `Start` ↔ `11`, `12`, `13`
+* `Select`, `Mode`, `Start` ↔ `11`, `12`, `A4`
 * `Rows 1-2` ↔ `2`, `3`
 * `Cols 1-6` ↔ `4` - `9`
-* `X1`, `Y1`, `X2`, `Y2` ↔ `A2`, `A3`, `A4`, `A5`
+* `X1`, `Y1`, `X2`, `Y2` ↔ `A2`, `A3`, `A6`, `A7`
 * `J1`, `J2` ↔ `A0`, `A1`
 
 And,
@@ -116,7 +119,7 @@ And,
 Each transmission contains 32 bits, which should be more than enough for a low speed application. Here's the format of the packets.
 
 * Bits 0 - 7: type of packet
-  - 1: Button state
+  - 1: Button push
   - 2: Joystick 1
   - 3: Joystick 2
 
