@@ -38,7 +38,7 @@ public:
 
 class Joystick {
 private:
-  const int threshold = 8;
+  const int threshold = 2;
 
   int pin_x_;
   int pin_y_;
@@ -59,11 +59,14 @@ public:
   bool read(uint8_t &x, uint8_t &y) {
     // analogRead has 10 bit accuracy. We use 8 bits.
     x = analogRead(pin_x_) >> 2;
-    y = analogRead(pin_y_) >> 2;
+    y = 255 - (analogRead(pin_y_) >> 2); // Y axis is inverted.
 
-    if (abs(x - x_prev) >= threshold || abs(y - y_prev) >= threshold) {
+    int delta_x = abs(x - x_prev);
+    int delta_y = abs(y - y_prev);
+
+    if (delta_x >= threshold || delta_y >= threshold) {
       x_prev = x;
-      y_prev = 255 - y; // Y axis is inverted. i.e. it grows downwards.
+      y_prev = y;
       return true;
     } else {
       return false;
@@ -159,18 +162,6 @@ void setup() {
 }
 
 void loop() {
-  // Serial.print(analogRead(A6));
-  // Serial.print(" ");
-  // Serial.print(analogRead(A7));
-  // Serial.print(" ");
-  // Serial.print(analogRead(A2));
-  // Serial.print(" ");
-  // Serial.print(analogRead(A3));
-  // Serial.print(" ");
-  // Serial.println();
-  // delay(1000);
-  // return;
-
   int key = keypad.getKey();
   if (key != 0) {
     remote.SendKey(key);
