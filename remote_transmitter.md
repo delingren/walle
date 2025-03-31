@@ -118,16 +118,15 @@ And,
 
 Each transmission contains 32 bits, which should be more than enough for a low speed application. Here's the format of the packets.
 
-* Bits 0 - 7: type of packet
+* Byte 1 (highest 8 bits): type of packet
   - 1: Button push
   - 2: Joystick 1
   - 3: Joystick 2
 
-* Bits 8 - 15: reserved
-* Bits 16- 31: dependent on the type of packet
+* Byte 2: reserved
+* Bytes 3 and 4: dependent on the type of packet
   - 1: bit
-  - 2 & 3: bits 16 - 31 contain the X and Y coordinates. Each coordinate is a signed 8 bit integer. This gives us the range of [-127, 128] for either axle.
-
+  - 2 & 3: these two bytes contain the X and Y coordinates. Each coordinate is a unsigned 8 bit integer. This gives us the range of [0 - 255] for either axle.
 
 ## Translate Joystick Movements
 
