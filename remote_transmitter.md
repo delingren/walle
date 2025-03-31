@@ -1,6 +1,6 @@
 # Custom Remote Control
 
-In addition to using an existing remote control, I also wanted to make my own remote control. It would have at least a 2-axle joystick and a few buttons. The biggest challenge is probably 3d pringing the housing. So I am exploring the option of using an existing PS/2 control, gutting the insides and replacing it with a microcontroller.
+In addition to using an existing remote control, I also wanted to make my own remote control with joysticks. The biggest challenge is probably 3d pringing the housing. So I am exploring the option of using an existing PS/2 control, gutting the insides and replacing it with a microcontroller.
 
 To do that, there are a few things I need to figure out.
 
@@ -92,7 +92,7 @@ Therefore, we need to bridge:
 * `Ax` with `Bx`, for `x` in `{U,D,L,R}`
 * `Lx` with `Rx`, for `x` in `{1,2}`
 
-All told, we need to use 17 GPIO pins, 4 of which need to be able to read analog signals.
+All told, we need to use 17 GPIO pins, 4 of which need to be able to read analog signals. Note that `A6` and `A7` are analog input only. So I'll use them for a joystick. Pin `13` is the built-in LED. I could remove the LED and reclaim the pin. But I might find a use for it later. So I'm saving pin `13`.
 
 Outgoing wires: 
 * PCB1: 
@@ -112,7 +112,7 @@ Connections to MCU:
 * `J1`, `J2` ↔ `A0`, `A1`
 
 And,
-* IR LED: `10`
+* IR LED: `10`. I want to solder the BJT directly to the dev board. Pin `10` is conveniently close to a ground pin. So I can solder two pins of the BJT on the board.
 
 ## Control Protocol
 
