@@ -175,17 +175,7 @@ I want to use the second joystick to control the arms' movements. Since the arms
 
 The remote control sends the raw positon of the joystick, just like the one that controls the treads. On the receiver (Wall-E) end, here's the logic.
 
-* Divide the plane into four quadrants.
-  ```
-   ╲ F ╱
-    ╲ ╱
-   L ╳ R
-    ╱ ╲
-   ╱ B ╲
-  ```
-* Determine the quadrant based on the position of the joystick.
-* For `Forward` and `Backward`, raise or lower both arms by one step.
-* For `Left` and `Right`, raise of lower one arm by one stop. 
-* The step size is determined by the offset of the Y axis.
+* Determine if the joystick is to the left or right or in the middle, using the offset of the X axis.
+* Raise or lower one or both arms depending on the previous result.
+* The amount to raise or lower is determined by the offset of the Y axis.
 
-So, you move the joystick back and forth to raise or lower one or two arms. If the joystick is to the left, it controls the left arm. If it's to the right, it controls the right arm. If it's in the middle(ish), it controls both.
