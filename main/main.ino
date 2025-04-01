@@ -6,6 +6,7 @@
 #include <Servo.h>
 
 #include "src/DYPlayerArduino.h"
+// TODO: enable only relevant protocols
 #include "src/IRremote.hpp"
 
 void resetIdleCount();
@@ -33,26 +34,41 @@ constexpr int minHead = 600;
 constexpr int maxHead = 2000;
 
 enum AnimationType {
-  // Change the value linearly to an end value, over a specified duration
-  Linear,
+  // Change the value linearly to a target value, over a specified duration
+  LinearTo,
+  // Change the value linearly by an increment, over a specified duration
+  LinearBy,
   // Maintain the value for a specified duration
   Constant
 };
 
+// TODO: change duration to speed (fraction per second). We usually want the
+// motion to be smooth at the same speed.
 struct Animation {
   AnimationType type;
   unsigned long millisDuration;
-  float valueEnd;
+  float value;
 
-  static Animation linear(float value, unsigned long duration) {
-    return Animation{.type = AnimationType::Linear,
+  static Animation linearTo(float value, unsigned long duration) {
+    return Animation{.type = AnimationType::LinearTo,
                      .millisDuration = duration,
-                     .valueEnd = value};
+                     .value = value};
   }
 
-  static Animation instant(float value) {
+  static Animation linearBy(float value, unsigned long duration) {
+    return Animation{.type = AnimationType::LinearBy,
+                     .millisDuration = duration,
+                     .value = value};
+  }
+
+  static Animation instantTo(float value) {
     return Animation{
-        .type = AnimationType::Linear, .millisDuration = 0, .valueEnd = value};
+        .type = AnimationType::LinearTo, .millisDuration = 0, .value = value};
+  }
+
+  static Animation instantBy(float value) {
+    return Animation{
+        .type = AnimationType::LinearBy, .millisDuration = 0, .value = value};
   }
 
   static Animation constant(unsigned long duration) {
@@ -78,6 +94,22 @@ public:
       millisStart = millis();
       valueStart = value_;
     }
+
+    if (animation.type == AnimationType::LinearBy) {
+      float valueCurrent = getValue();
+      if (valueCurrent <= 0 || valueCurrent >= 1.0) {
+        return;
+      }
+      float valueTarget = valueCurrent + animation.value;
+      if (valueTarget > 1.0) {
+        valueTarget = 1.0;
+      }
+      if (valueTarget < 0) {
+        valueTarget = 0;
+      }
+      animation.value = getValue() + animation.value;
+    }
+
     animationQueue.push(animation);
   }
 
@@ -116,16 +148,16 @@ protected:
 
     Animation animation = animationQueue.front();
     switch (animation.type) {
-    case AnimationType::Linear: {
+    case AnimationType::LinearTo: {
       float fraction = static_cast<float>(millisNow - millisStart) /
                        static_cast<float>(animation.millisDuration);
       if (fraction >= 1.0) {
-        setValue(animation.valueEnd);
+        setValue(animation.value);
         animationQueue.pop();
         transitionToNextAnimation(millisNow);
       } else {
         float valueNext =
-            (1.0 - fraction) * valueStart + fraction * animation.valueEnd;
+            (1.0 - fraction) * valueStart + fraction * animation.value;
         setValue(valueNext);
       }
       break;
@@ -155,8 +187,8 @@ public:
                                         (1 - value) * static_cast<float>(min_));
     // Specific to RP2040, since the Servo library uses PIO, attach() needs to
     // be called after setup() has begun. so we can't do it in the constructor.
-    // For another MCU, we can most likely move this to the constructor and get
-    // rid of pin_
+    // For any other MCU, we can most likely move this to the constructor and
+    // get rid of pin_
     if (!servo_.attached()) {
       if (max_ > min_) {
         servo_.attach(pin_, min_, max_);
@@ -237,7 +269,7 @@ private:
 };
 
 class PushButton {
-  static constexpr int debounce_threshold = 100;
+  static constexpr int debounceThreshold = 100;
 
 public:
   PushButton(int pin) : pin_(pin) {}
@@ -249,7 +281,7 @@ public:
 
   bool isPushed() {
     unsigned long now = millis();
-    if (now - last_ < debounce_threshold) {
+    if (now - last_ < debounceThreshold) {
       return false;
     }
     last_ = now;
@@ -364,18 +396,18 @@ bool isIdling() { return millis() - millisIdleStart >= 10000; }
 void demo() {
   // Hold for 0.5s, look left, right, then straight
   std::array<Animation, 5> headAnimation = {
-      Animation::instant(0.5), Animation::constant(500),
-      Animation::linear(0, 500), Animation::linear(1, 1000),
-      Animation::linear(0.5, 500)};
+      Animation::instantTo(0.5), Animation::constant(500),
+      Animation::linearTo(0, 500), Animation::linearTo(1, 1000),
+      Animation::linearTo(0.5, 500)};
   head.queueAnimations(headAnimation);
 
   // Hold for 2s, blink twice
   std::array<Animation, 9> eyeAnimation = {
-      Animation::instant(1),    Animation::constant(2000),
-      Animation::linear(0, 20), Animation::constant(100),
-      Animation::linear(1, 20), Animation::constant(300),
-      Animation::linear(0, 20), Animation::constant(100),
-      Animation::linear(1, 20)};
+      Animation::instantTo(1),    Animation::constant(2000),
+      Animation::linearTo(0, 20), Animation::constant(100),
+      Animation::linearTo(1, 20), Animation::constant(300),
+      Animation::linearTo(0, 20), Animation::constant(100),
+      Animation::linearTo(1, 20)};
   leftEye.queueAnimations(eyeAnimation);
   rightEye.queueAnimations(eyeAnimation);
 
@@ -383,11 +415,11 @@ void demo() {
   AudioQueue::queuePlay(2);
 }
 
-void play_next_audio() {
-  constexpr int audio_file_count = 10;
+void playNextAudio() {
+  constexpr int audioFileCount = 10;
   static int index = 2;
   index++;
-  if (index > audio_file_count) {
+  if (index > audioFileCount) {
     index = 1;
   }
   AudioQueue::queueDelay(100);
@@ -395,125 +427,133 @@ void play_next_audio() {
 }
 
 void stop() {
-  std::array<Animation, 1> animations = {Animation::linear(0, 200)};
+  std::array<Animation, 1> animations = {Animation::linearTo(0, 200)};
   leftTread.queueAnimations(animations);
   rightTread.queueAnimations(animations);
 }
 
-void spin_left() {
-  leftTread.queueAnimation(Animation::linear(-1, 200));
-  rightTread.queueAnimation(Animation::linear(1, 200));
+void spinLeft() {
+  leftTread.queueAnimation(Animation::linearTo(-1, 200));
+  rightTread.queueAnimation(Animation::linearTo(1, 200));
 }
 
-void spin_right() {
-  leftTread.queueAnimation(Animation::linear(1, 200));
-  rightTread.queueAnimation(Animation::linear(-1, 200));
+void spinRight() {
+  leftTread.queueAnimation(Animation::linearTo(1, 200));
+  rightTread.queueAnimation(Animation::linearTo(-1, 200));
 }
 
-void go_forward() {
-  leftTread.queueAnimation(Animation::linear(1, 200));
-  rightTread.queueAnimation(Animation::linear(1, 200));
+void forward() {
+  leftTread.queueAnimation(Animation::linearTo(1, 200));
+  rightTread.queueAnimation(Animation::linearTo(1, 200));
 }
 
-void go_backwards() {
-  leftTread.queueAnimation(Animation::linear(-1, 200));
-  rightTread.queueAnimation(Animation::linear(-1, 200));
+void backward() {
+  leftTread.queueAnimation(Animation::linearTo(-1, 200));
+  rightTread.queueAnimation(Animation::linearTo(-1, 200));
 }
 
-void forward_left() {
-  leftTread.queueAnimation(Animation::linear(0, 200));
-  rightTread.queueAnimation(Animation::linear(1, 200));
+void forwardLeft() {
+  leftTread.queueAnimation(Animation::linearTo(0, 200));
+  rightTread.queueAnimation(Animation::linearTo(1, 200));
 }
 
-void forward_right() {
-  leftTread.queueAnimation(Animation::linear(1, 200));
-  rightTread.queueAnimation(Animation::linear(0, 200));
+void forwardRight() {
+  leftTread.queueAnimation(Animation::linearTo(1, 200));
+  rightTread.queueAnimation(Animation::linearTo(0, 200));
 }
 
-void backward_left() {
-  leftTread.queueAnimation(Animation::linear(0, 200));
-  rightTread.queueAnimation(Animation::linear(-1, 200));
+void backwardLeft() {
+  leftTread.queueAnimation(Animation::linearTo(0, 200));
+  rightTread.queueAnimation(Animation::linearTo(-1, 200));
 }
 
-void backward_right() {
-  leftTread.queueAnimation(Animation::linear(-1, 200));
-  rightTread.queueAnimation(Animation::linear(0, 200));
+void backwardRight() {
+  leftTread.queueAnimation(Animation::linearTo(-1, 200));
+  rightTread.queueAnimation(Animation::linearTo(0, 200));
 }
 
-void left_arm_up() { leftArm.queueAnimation(Animation::linear(1, 1000)); }
+void leftArmMove(float value) {
+  leftArm.queueAnimation(Animation::linearBy(value, 100));
+}
 
-void left_arm_down() { leftArm.queueAnimation(Animation::linear(0, 1000)); }
+void rightArmMove(float value) {
+  rightArm.queueAnimation(Animation::linearBy(value, 100));
+}
 
-void right_arm_up() { rightArm.queueAnimation(Animation::linear(1, 1000)); }
+void leftArmUp() { leftArm.queueAnimation(Animation::linearTo(1, 1000)); }
 
-void right_arm_down() { rightArm.queueAnimation(Animation::linear(0, 1000)); }
+void leftArmDown() { leftArm.queueAnimation(Animation::linearTo(0, 1000)); }
+
+void rightArmUp() { rightArm.queueAnimation(Animation::linearTo(1, 1000)); }
+
+void rightArmDown() { rightArm.queueAnimation(Animation::linearTo(0, 1000)); }
 
 void breathe() {
-  std::array<Animation, 2> animations = {Animation::linear(0, 2000),
-                                         Animation::linear(1, 2000)};
+  std::array<Animation, 2> animations = {Animation::linearTo(0, 2000),
+                                         Animation::linearTo(1, 2000)};
   leftEye.queueAnimations(animations);
   rightEye.queueAnimations(animations);
 }
 
-void blink_twice() {
+void blinkTwice() {
   std::array<Animation, 7> animations = {
-      Animation::linear(0, 20), Animation::constant(100),
-      Animation::linear(1, 20), Animation::constant(300),
-      Animation::linear(0, 20), Animation::constant(100),
-      Animation::linear(1, 20)};
+      Animation::linearTo(0, 20), Animation::constant(100),
+      Animation::linearTo(1, 20), Animation::constant(300),
+      Animation::linearTo(0, 20), Animation::constant(100),
+      Animation::linearTo(1, 20)};
   leftEye.queueAnimations(animations);
   rightEye.queueAnimations(animations);
 }
 
-void look_left() { head.queueAnimation(Animation::linear(0, 1000)); }
+void lookLeft() { head.queueAnimation(Animation::linearTo(0, 1000)); }
 
-void look_right() { head.queueAnimation(Animation::linear(1, 1000)); }
+void lookRight() { head.queueAnimation(Animation::linearTo(1, 1000)); }
 
-void look_straight() { head.queueAnimation(Animation::linear(0.5, 1000)); }
+void lookStraight() { head.queueAnimation(Animation::linearTo(0.5, 1000)); }
 
-void tilt_eye() {
-  std::array<Animation, 3> animations = {Animation::linear(1, 0),
-                                         Animation::linear(1, 1600),
-                                         Animation::linear(0, 0)};
+void tiltEye() {
+  std::array<Animation, 3> animations = {Animation::linearTo(1, 0),
+                                         Animation::linearTo(1, 1600),
+                                         Animation::linearTo(0, 0)};
   eyeTilter.queueAnimations(animations);
 }
 
-void toggle_left_arm() {
+void toggleLeftArm() {
   static uint8_t position = 1;
   if (position == 1) {
-    leftArm.queueAnimation(Animation::linear(0, 1000));
+    leftArm.queueAnimation(Animation::linearTo(0, 1000));
     position = 0;
   } else {
-    leftArm.queueAnimation(Animation::linear(1, 1000));
+    leftArm.queueAnimation(Animation::linearTo(1, 1000));
     position = 1;
   }
 }
 
-void toggle_right_arm() {
+void toggleRightArm() {
   static uint8_t position = 1;
   if (position == 1) {
-    rightArm.queueAnimation(Animation::linear(0, 1000));
+    rightArm.queueAnimation(Animation::linearTo(0, 1000));
     position = 0;
   } else {
-    rightArm.queueAnimation(Animation::linear(1, 1000));
+    rightArm.queueAnimation(Animation::linearTo(1, 1000));
     position = 1;
   }
 }
 
-void look_around() {
+void lookAround() {
   // Turn left, right, then straight
   std::array<Animation, 3> animations1 = {
-      Animation::linear(0, 700),
-      Animation::linear(1, 1400),
-      Animation::linear(0.5, 700),
+      Animation::linearTo(0, 700),
+      Animation::linearTo(1, 1400),
+      Animation::linearTo(0.5, 700),
   };
   // Open eyes, hold while turning head, then blink twice
   std::array<Animation, 9> animations2 = {
-      Animation::linear(1, 0),  Animation::constant(3000),
-      Animation::linear(0, 20), Animation::constant(100),
-      Animation::linear(1, 20), Animation::constant(300),
-      Animation::linear(0, 20), Animation::constant(100),
-      Animation::linear(1, 20)};
+      Animation::linearTo(1, 0),  Animation::constant(3000),
+      Animation::linearTo(0, 20), Animation::constant(100),
+      Animation::linearTo(1, 20), Animation::constant(300),
+      Animation::linearTo(0, 20), Animation::constant(100),
+      Animation::linearTo(1, 20)};
 
   head.queueAnimations(animations1);
   leftEye.queueAnimations(animations2);
@@ -572,78 +612,79 @@ void loop() {
 
     IrReceiver.resume();
 
+    // The Roku remote control
     if (protocol == NEC) {
       switch (code) {
       case 3893872618: // Power
         demo();
         break;
       case 2573649898: // Back
-        look_around();
+        lookAround();
         break;
       case 4228106218: // Home
-        look_straight();
+        lookStraight();
         break;
 
       case 3860449258: // Up
-        go_forward();
+        forward();
         break;
       case 3425945578: // Down
-        go_backwards();
+        backward();
         break;
       case 3776890858: // Left
-        spin_left();
+        spinLeft();
         break;
       case 3526215658: // Right
-        spin_right();
+        spinRight();
         break;
       case 3576350698: // OK
         stop();
         break;
 
       case 2272839658: // Repeat
-        blink_twice();
+        blinkTwice();
         break;
       case 2640496618: // Sleep
-        tilt_eye();
+        tiltEye();
         break;
       case 2657208298: // Star
         breathe();
         break;
 
       case 3409233898: // Rewind
-        look_left();
+        lookLeft();
         break;
       case 3008153578: // Play/Pause
-        play_next_audio();
+        playNextAudio();
         break;
       case 2857748458: // F. Fwd
-        look_right();
+        lookRight();
         break;
 
       case 2907883498: // Netflix
-        forward_left();
+        forwardLeft();
         break;
       case 2991441898: // Hulu
-        backward_left();
+        backwardLeft();
         break;
       case 3024865258: // AmazonPrime
-        forward_right();
+        forwardRight();
         break;
       case 4077701098: // Disney
-        backward_right();
+        backwardRight();
         break;
 
       case 4144547818: // Vudu
-        left_arm_up();
+        leftArmUp();
         break;
       case 2974730218: // HBO
-        left_arm_down();
+        leftArmDown();
         break;
       case 2841036778: // YouTube
-        right_arm_up();
+        rightArmUp();
         break;
       case 4177971178: // Sling
-        right_arm_down();
+        rightArmDown();
         break;
 
       case 4027566058: // Vol Up
@@ -655,6 +696,85 @@ void loop() {
       case 3743467498: // Mute
         AudioQueue::queuePlay(1);
         break;
+      }
+    }
+
+    // My custom remote control
+    if (protocol == ONKYO) {
+      uint16_t type = (code & 0xFF000000) >> 24;
+      uint16_t value = (code & 0x0000FFFF);
+
+      switch (type) {
+      case 2: {
+        // Left joystick
+        uint8_t xRaw = (value & 0xFF00) >> 8;
+        uint8_t yRaw = (value & 0x00FF) >> 0;
+
+        // Normalize x and y values. Range: [-1,1]
+        float xNormalized = (xRaw - 127.5) / 127.5;
+        float yNormalized = (yRaw - 127.5) / 127.5;
+
+        float xSign = xNormalized >= 0 ? 1 : -1;
+        float ySign = yNormalized >= 0 ? 1 : -1;
+
+        float left, right;
+        if (xSign == ySign) {
+          left = ySign * max(abs(xNormalized), abs(yNormalized));
+          right = ySign * (abs(yNormalized) - abs(xNormalized));
+        } else {
+          right = ySign * max(abs(xNormalized), abs(yNormalized));
+          left = ySign * (abs(yNormalized) - abs(xNormalized));
+        }
+
+        leftTread.setValue(left);
+        rightTread.setValue(right);
+        break;
+      }
+
+      case 3: {
+        // Range with which a normalized x value is considered "center"
+        const float thresholdLeft = -0.5;
+        const float thresholdRight = 0.5;
+
+        // Joy stick positions. Range: [0,255]
+        uint8_t xRaw = (value & 0xFF00) >> 8;
+        uint8_t yRaw = (value & 0x00FF) >> 0;
+
+        // Normalize x and y values. Range: [-1,1]
+        float xNormalized = (xRaw - 127.5) / 127.5;
+        float yNormalized = (yRaw - 127.5) / 127.5;
+
+        bool moveLeft = xNormalized <= thresholdRight;
+        bool moveRight = xNormalized >= thresholdLeft;
+
+        // Calcualte the amount to move: nothing, a little, or a lot.
+        float ySign = yNormalized >= 0 ? 1 : -1;
+        float yAbsolute = abs(yNormalized);
+        float moveAmount;
+        if (yAbsolute > 0.8) {
+          moveAmount = 0.1 * ySign;
+        } else if (yAbsolute > 0.2) {
+          moveAmount = 0.5 * ySign;
+        } else {
+          moveAmount = 0;
+        }
+
+        if (moveAmount > 0 && moveLeft) {
+          leftArmMove(moveAmount);
+        }
+        if (moveAmount > 0 && moveRight) {
+          rightArmMove(moveAmount);
+        }
+
+        break;
+      }
+      case 1: {
+        // Button push
+        uint16_t key = value;
+        // TODO: assign buttons
+        demo();
+        break;
+      }
       }
     }
   }
