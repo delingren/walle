@@ -94,18 +94,20 @@ All told, we need to use 17 input pins, 4 of which need to be able to analog. No
 
 Outgoing wires: 
 * PCB1: 
-  - `BAT-`, `GND`, `BAT+` (to PCB2)
-  - `BAT+`, `GND`, `Rows 1-2`, `Cols 1-6`, `Select`, `Mode`, `Start` (to MCU)
+  - to PCB2: `BAT-`, `GND`, `BAT+`
+  - to MCU: `BAT+`, `GND`,  `Select`, `Mode`, `Start`, `Rows 1-2`, `Cols 1-6`
 * PCB2: 
-  - `BAT-`, `GND`, `BAT+` (to PCB1)
-  - `X1`, `Y1`, `X2`, `Y2`, `J1`, `J2` (to MCU)
+  - to PCB1: `BAT-`, `GND`, `BAT+`
+  - to MCU: `X1`, `Y1`, `X2`, `Y2`, `J1`, `J2`
 
-Connections to MCU:
+PCB1 ↔ MCU:
 * `BAT+` ↔ `Vcc`
 * `GND` ↔ `GND`
 * `Select`, `Mode`, `Start` ↔ `11`, `12`, `A4`
 * `Rows 1-2` ↔ `2`, `3`
 * `Cols 1-6` ↔ `4` - `9`
+
+PCB2 ↔ MCU:
 * `X1`, `Y1`, `X2`, `Y2` ↔ `A2`, `A3`, `A6`, `A7`
 * `J1`, `J2` ↔ `A0`, `A1`
 
@@ -113,7 +115,7 @@ And,
 * IR LED: `10`. I want to solder the BJT directly to the dev board. Pin `10` is conveniently close to a ground pin. So I can solder two pins of the BJT on the board.
 
 ## Control Protocol
-I'm using [`sendNECRaw()`](https://github.com/Arduino-IRremote/Arduino-IRremote/blob/fbebc03a4c64a5b158be946eddf5835eedecf1c8/src/ir_NEC.hpp#L230) which can send a raw code of bits at a time, which should be more than enough for a low speed application. I am sending one event in each transmission. The event can be a button push or a joystick position change. Here's the format of the packets.
+I'm using [`sendNECRaw()`](https://github.com/Arduino-IRremote/Arduino-IRremote/blob/fbebc03a4c64a5b158be946eddf5835eedecf1c8/src/ir_NEC.hpp#L230) which can send a raw code of 32 bits at a time, which should be more than enough for a low speed application. I am sending one event in each transmission. The event can be a button push or a joystick position change. Here's the format of the packets.
 
 * Byte 1 (highest 8 bits): type of packet
   - 1: Button push
@@ -162,3 +164,27 @@ if (sign(x) == sign(y)) {
   l = sign(y)*(|y|-|x|);
 }
 ```
+
+## Control Arms with a Joystick
+I want to use the second joystick to control the arms' movements. Since the arms have two degrees of freedom between them, and the joystick has two axes, we should be able to do that. The problem is to find an intuitive way. Here are my goals:
+
+* Forward/backward: raise or lower both arms
+* Backward: lower both arms
+* Front left/back left: raise or lower left arm only
+* Front right/back right: raise or lower right arm only
+
+The remote control sends the raw positon of the joystick, just like the one that controls the treads. On the receiver (Wall-E) end, here's the logic.
+
+* Divide the plane into four quadrants.
+  ```
+   ╲ F ╱
+    ╲ ╱
+   L ╳ R
+    ╱ ╲
+   ╱ B ╲
+  ```
+* Determine the quadrant based on the position of the joystick.
+* For `Forward` and `Backward`, raise or lower both arms by one step. The step size is determined by the offset of the Y axis.
+* For `Left` and `Right`, raise of lower one arm by one stop. The step size is determined by the offset of the Y axis.
+
+So, you move the joystick back and forth to raise or lower one or two arms. If the joystick is to the left, it controls the left arm. If it's to the right, it controls the right arm. If it's in the middle(ish), it controls both.
