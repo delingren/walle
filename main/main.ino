@@ -700,8 +700,10 @@ void loop() {
       }
     }
 
-    // My custom remote control
-    if (protocol == ONKYO) {
+    // My custom remote control. The library sometimes reports NEC2, sometimes
+    // ONKYO. They are probably distinguishable from the raw code. I'll just
+    // include them both.
+    if (protocol == NEC2 || protocol == ONKYO) {
       uint16_t type = (code & 0xFF000000) >> 24;
       uint16_t value = (code & 0x0000FFFF);
 
