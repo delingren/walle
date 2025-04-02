@@ -52,6 +52,9 @@ public:
   void begin() {
     pinMode(pin_x_, INPUT);
     pinMode(pin_y_, INPUT);
+
+    x_prev = analogRead(pin_x_) >> 2;
+    y_prev = 255 - (analogRead(pin_y_) >> 2); // Y axis is inverted.
   }
 
   // Read x and y positions. Return true if either has shifted enough from the
@@ -59,7 +62,7 @@ public:
   bool read(uint8_t &x, uint8_t &y) {
     // analogRead has 10 bit accuracy. We use 8 bits.
     x = analogRead(pin_x_) >> 2;
-    y = 255 - (analogRead(pin_y_) >> 2); // Y axis is inverted.
+    y = 255 - (analogRead(pin_y_) >> 2);
 
     int delta_x = abs(x - x_prev);
     int delta_y = abs(y - y_prev);

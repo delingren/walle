@@ -1,3 +1,4 @@
+#define DECODE_NEC
 #include <IRremote.hpp>
 
 void setup() {
@@ -9,6 +10,11 @@ void loop() {
   if (IrReceiver.decode()) {
     uint32_t code = IrReceiver.decodedIRData.decodedRawData;
     decode_type_t protocol = IrReceiver.decodedIRData.protocol;
+
+    Serial.print("Protocol: ");
+    Serial.print(protocol);
+    Serial.print(" Raw Code: ");
+    Serial.println(code);
 
     if (protocol == NEC2 || protocol == ONKYO) {
       uint16_t type = (code & 0xFF000000) >> 24;
@@ -40,10 +46,7 @@ void loop() {
       }
     }
 
-    // Serial.print("Protocol: ");
-    // Serial.print(protocol);
-    // Serial.print(" Raw Code: ");
-    // Serial.println(code);
+    
     IrReceiver.resume();
   }
 }

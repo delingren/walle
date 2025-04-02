@@ -6,7 +6,7 @@
 #include <Servo.h>
 
 #include "src/DYPlayerArduino.h"
-// TODO: enable only relevant protocols
+#define DECODE_NEC // Decodes NEC, NEC2, and ONKYO
 #include "src/IRremote.hpp"
 
 void resetIdleCount();
@@ -42,8 +42,9 @@ enum AnimationType {
   Constant
 };
 
-// TODO: change duration to speed (fraction per second). We usually want the
-// motion to be smooth at the same speed.
+// TODO: add an option to specify the speed of the animation (fraction per
+// second) instead of duration. We usually want the motion to be smooth at the
+// same speed.
 struct Animation {
   AnimationType type;
   unsigned long millisDuration;
