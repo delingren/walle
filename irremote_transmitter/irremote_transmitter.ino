@@ -38,7 +38,7 @@ public:
 
 class Joystick {
 private:
-  const int threshold = 2;
+  const int sensitivity = 5;
 
   int pin_x_;
   int pin_y_;
@@ -67,7 +67,7 @@ public:
     int delta_x = abs(x - x_prev);
     int delta_y = abs(y - y_prev);
 
-    if (delta_x >= threshold || delta_y >= threshold) {
+    if (delta_x >= sensitivity || delta_y >= sensitivity) {
       x_prev = x;
       y_prev = y;
       return true;
