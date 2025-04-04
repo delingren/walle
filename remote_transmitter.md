@@ -12,9 +12,9 @@ To do that, there are a few things I need to figure out.
 As mentioned before, I intend to use an 8MHz ATmega328 devboard (Arduino Pro Mini clones), which should be able to run at 3V comofortably. So I am going to prototype everything on that board. One small caveat about working with this board is that ATmega328 comes in two versions: 8Mhz and 16MHz. When programming with Arduino IDE or CLI, we need to choose the correct frequency. Otherwise, the code will still run, but the timing is all messed up. Anything that relies on the frequency will not work properly. E.g. the serial console or the IR transmitter.
 
 ## IR transmitter
-I have some generic 940 nm IR LEDs from Amazon and I intend to use one. I can probably control it directly using an MCU pin. But amplifying with a BJT will definitely improve the range.
+I have some generic 940 nm IR LEDs from Amazon and I intend to use one. These LEDs are rather weak. I am planning to use a BJT to improve the range, which still seems to be very limited after some prototyping. But for a toy project like this, that's OK. As a future improvement, I am planning on using 433 MHz radio frequency transmission, which doesn't require a line of sight. But that's for another day. For now, let's focus on the IR transmission.
 
-So my first step is to make sure the MCU and the IR transmitter are capable of running on a 3V DC power supply. So I loaded up a simple sketch to send a code every half a second:
+My first step is to make sure the MCU and the IR transmitter are capable of running on a 3V DC power supply. So I loaded up a simple sketch to send a code every half a second:
 
 ```
 #include <IRremote.hpp>
@@ -52,7 +52,7 @@ void loop() {
 }
 ```
 
-Note that `sendNECRaw()` sends codes of protocol `10(ONKYO)`. And the raw code is 32 bits, which is more than enough to encode joystick positions and key presses.
+Note that `sendNECRaw()` sends codes that are recognized as  either `9(NEC2)` or `10(ONKYO)`. I suppose these two protocols are more or less the same and cannot be distinguished from the receiver side. The raw code is 32 bits, which is more than enough to encode joystick positions and key presses.
 
 ![ir_prototype](./media/IMG_0908.jpeg)
 
@@ -63,17 +63,23 @@ The MCU itself can be powered by 1.8-5.5V DC. And since I'm using batteries, I d
 
 The PS2 controller has tow major PCBs. PCB1 contains the battery box, the IC and various buttons. PCB2 contains two joysticks and a switch. Here's a list of the controls.
 
+PCB1 contains:
 * Arrows group A on the left. Let's denote them as `AL`, `AU`, `AR`, and `AD`
 * Arrows group B on the right. Let's denote them as `BL`, `BU`, `BR`, and `BD`
 * Buttons `L1` & `L2`
 * Buttons `R1` & `R2`
 * Buttons `Select`, `Mode`, `Start`
-* Joystick 1, with 2 axes and a button `J1`
-* Joystick 2, with 2 axes and a button `J2`
 
 `L1`, `L2`, and arrows `Ax` share a common pin; `R1`, `R2`, and arrows `Bx` share a common pin; `Select`, `Mode`, and `Start` are all connected to GND.
 
-So here's the plan.
+PCB2 contains:
+* Joystick 1, with axes `X1`, `Y1`, and button `J1`
+* Joystick 2, with axes `X2`, `Y2`, and button `J2`
+* A sliding switch `SW`
+
+![pcb2](./media/IMG_0830.jpeg)
+
+So here's the plan. For PCB1,
 
 * Wire `Ax`, `Bx`, `Lx`, and `Rx` as a 2x6 matrix (8 pins) like this:
 
@@ -90,7 +96,17 @@ Therefore, we need to bridge:
 * `Ax` with `Bx`, for `x` in `{U,D,L,R}`
 * `Lx` with `Rx`, for `x` in `{1,2}`
 
-All told, we need to use 17 input pins, 4 of which need to be able to analog. Note that `A6` and `A7` are analog input only. So I'll use them for a joystick. Pin `13` is the built-in LED. I could remove the LED and reclaim the pin. But I might find a use for it later. So I'm saving pin `13`. We also need one digital output pin to drive the IR LED. That's 18 GPIO pins in total. The dev board I have, basically a clone of Arduino Pro Mini, has just enough.
+For PCB2:
+
+* Connect `HIGH` to `BAT+` from PCB1
+* Bridge `LOW` with `GND`
+* Connect `SW` to `BAT-` from PCB1
+* Connect `GND` to `GND` from PCB1, which ultimately connects to `GND` of the MCU
+
+This way, when the switch is turned on, `BAT-` is connected to `GND` of both PCBs and the MCU.
+
+Now to tally all the GPIO pin usage, we need to use 17 input pins, 4 of which need to be able to analog. Note that `A6` and `A7` are analog input only for Pro Mini. So I'll use them for a joystick. Pin `13` is the built-in LED. I could remove the LED and reclaim the pin. But I might find a use for it later. So I'm saving pin `13`. We also need one digital output pin to drive the IR LED. That's 18 GPIO pins in total. The dev board I have, basically a clone of Arduino Pro Mini, has just enough.
+
 
 Outgoing wires: 
 * PCB1: 
