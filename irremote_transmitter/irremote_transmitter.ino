@@ -1,3 +1,4 @@
+#define NO_LED_FEEDBACK_CODE
 #include <IRremote.hpp>
 #include <Keypad.h>
 
