@@ -98,7 +98,8 @@ public:
 
     if (animation.type == AnimationType::LinearBy) {
       float valueCurrent = getValue();
-      if (valueCurrent <= 0 || valueCurrent >= 1.0) {
+      if (valueCurrent <= 0 && animation.value <= 0 ||
+          valueCurrent >= 1.0 && animation.value >= 0) {
         return;
       }
       float valueTarget = valueCurrent + animation.value;
@@ -149,7 +150,8 @@ protected:
 
     Animation animation = animationQueue.front();
     switch (animation.type) {
-    case AnimationType::LinearTo: {
+    case AnimationType::LinearTo:
+    case AnimationType::LinearBy: {
       float fraction = static_cast<float>(millisNow - millisStart) /
                        static_cast<float>(animation.millisDuration);
       if (fraction >= 1.0) {
@@ -236,7 +238,7 @@ private:
 
 // Bidirectional motor, controlled by an H-bridge
 class BiMotor : public Animatable {
-  static constexpr float low_threshold = 0.05;
+  static constexpr float low_threshold = 0.1;
 
 public:
   BiMotor(uint8_t pin1, uint8_t pin2) : pin1_(pin1), pin2_(pin2), Animatable() {
@@ -562,8 +564,9 @@ void lookAround() {
 }
 
 void setup() {
-  // Set up serial for debugging
+#ifdef NDEBUG
   Serial.begin(115200);
+#endif
 
   // Set up push button
   pushButton.begin();
@@ -708,8 +711,7 @@ void loop() {
       uint16_t value = (code & 0x0000FFFF);
 
       switch (type) {
-      case 2: {
-        // Left joystick
+      case 2: { // Left joystick
         uint8_t xRaw = (value & 0xFF00) >> 8;
         uint8_t yRaw = (value & 0x00FF) >> 0;
 
@@ -731,13 +733,28 @@ void loop() {
 
         leftTread.setValue(left);
         rightTread.setValue(right);
+
+#ifdef NDEBUG
+        Serial.print("Tread L: ");
+        Serial.print(left);
+        Serial.print(" R: ");
+        Serial.print(right);
+        Serial.println();
+#endif
         break;
       }
 
-      case 3: {
+      case 3: { // Right joystick
         // Range with which a normalized x value is considered "center"
         const float thresholdLeft = -0.5;
         const float thresholdRight = 0.5;
+
+        // Timestamp of last arm movement, to avoid moving arms too fast.
+        static unsigned long millisLastArmMove = 0;
+        unsigned long millisNow = millis();
+        if (millisNow - millisLastArmMove < 500) {
+          break;
+        }
 
         // Joy stick positions. Range: [0,255]
         uint8_t xRaw = (value & 0xFF00) >> 8;
@@ -754,19 +771,29 @@ void loop() {
         float ySign = yNormalized >= 0 ? 1 : -1;
         float yAbsolute = abs(yNormalized);
         float moveAmount;
-        if (yAbsolute > 0.8) {
+        if (yAbsolute > 0.95) {
+          moveAmount = 0.2 * ySign;
+        } else if (yAbsolute > 0.1) {
           moveAmount = 0.1 * ySign;
-        } else if (yAbsolute > 0.2) {
-          moveAmount = 0.5 * ySign;
         } else {
           moveAmount = 0;
         }
 
-        if (moveAmount > 0 && moveLeft) {
+        if (moveAmount != 0 && moveLeft) {
           leftArmMove(moveAmount);
+          millisLastArmMove = millisNow;
+#ifdef NDEBUG
+          Serial.print("Arm L: ");
+          Serial.println(moveAmount);
+#endif
         }
-        if (moveAmount > 0 && moveRight) {
+        if (moveAmount != 0 && moveRight) {
           rightArmMove(moveAmount);
+          millisLastArmMove = millisNow;
+#ifdef NDEBUG
+          Serial.print("Arm R: ");
+          Serial.println(moveAmount);
+#endif
         }
 
         break;
