@@ -2,6 +2,14 @@
 #include <IRremote.hpp>
 #include <Keypad.h>
 
+#define NDEBUG
+
+#ifdef NDEBUG
+#define DEBUG_OUTPUT(...) Serial.print(__VA_ARGS__)
+#else
+#define DEBUG_OUTPUT(...) void(__VA_ARGS__)
+#endif
+
 class PushButton {
 private:
   const int debounce_ = 50;
@@ -23,6 +31,7 @@ public:
       return false;
     }
     last_ = now;
+
     int state = digitalRead(pin_);
     // No hold and repeat. The button is only considered pushed
     // if it was released in the previous scan.
@@ -40,37 +49,54 @@ public:
 class Joystick {
 private:
   const int sensitivity = 5;
+  const int debounce_ = 50;
 
-  int pin_x_;
-  int pin_y_;
+  unsigned long last_ = 0;
+  int pinHigh_;
+  int pinX_;
+  int pinY_;
 
-  uint8_t x_prev = 128;
-  uint8_t y_prev = 128;
+  uint8_t xPrev = 128;
+  uint8_t yPrev = 128;
 
 public:
-  Joystick(int pin_x, int pin_y) : pin_x_(pin_x), pin_y_(pin_y) {}
+  Joystick(int pinHigh, int pinX, int pinY)
+      : pinHigh_(pinHigh), pinX_(pinX), pinY_(pinY) {}
 
   void begin() {
-    pinMode(pin_x_, INPUT);
-    pinMode(pin_y_, INPUT);
+    pinMode(pinHigh_, OUTPUT);
+    pinMode(pinX_, INPUT);
+    pinMode(pinY_, INPUT);
 
-    x_prev = analogRead(pin_x_) >> 2;
-    y_prev = 255 - (analogRead(pin_y_) >> 2); // Y axis is inverted.
+    digitalWrite(pinHigh_, HIGH);
+    xPrev = analogRead(pinX_) >> 2;
+    yPrev = 255 - (analogRead(pinY_) >> 2); // Y axis is inverted.
+    digitalWrite(pinHigh_, LOW);
+
+    last_ = millis();
   }
 
   // Read x and y positions. Return true if either has shifted enough from the
   // last position.
   bool read(uint8_t &x, uint8_t &y) {
+    unsigned long now = millis();
+    if (now - last_ < debounce_) {
+      return false;
+    }
+    last_ = now;
+
+    digitalWrite(pinHigh_, HIGH);
     // analogRead has 10 bit accuracy. We use 8 bits.
-    x = analogRead(pin_x_) >> 2;
-    y = 255 - (analogRead(pin_y_) >> 2);
+    x = analogRead(pinX_) >> 2;
+    y = 255 - (analogRead(pinY_) >> 2);
+    digitalWrite(pinHigh_, LOW);
 
-    int delta_x = abs(x - x_prev);
-    int delta_y = abs(y - y_prev);
+    int deltaX = abs(x - xPrev);
+    int deltaY = abs(y - yPrev);
 
-    if (delta_x >= sensitivity || delta_y >= sensitivity) {
-      x_prev = x;
-      y_prev = y;
+    if (deltaX >= sensitivity || deltaY >= sensitivity) {
+      xPrev = x;
+      yPrev = y;
       return true;
     } else {
       return false;
@@ -85,80 +111,68 @@ private:
   enum TYPE { KEY = 1, JOYSTICK1 = 2, JOYSTICK2 = 3 };
 
   void Send(uint16_t type, uint16_t value) {
-    digitalWrite(LED_BUILTIN, HIGH);
     IrSender.sendNECRaw((uint32_t)type << 24 | value);
-    delay(40);
-    digitalWrite(LED_BUILTIN, LOW);
+    // A short delay seems to improve the signal quality.
+    delay(30);
   }
 
 public:
   IrRemote(int pin) : pin_(pin) {}
 
-  begin() {
-    IrSender.begin(pin_);
-    pinMode(LED_BUILTIN, OUTPUT);
-  }
+  begin() { IrSender.begin(pin_); }
 
   void SendKey(uint16_t key) {
-    Serial.print("Key ");
-    Serial.println(key);
+    DEBUG_OUTPUT("Key ");
+    DEBUG_OUTPUT(key);
+    DEBUG_OUTPUT('\n');
     Send(TYPE::KEY, key);
   }
 
   void SendJoystick1(uint8_t x, uint8_t y) {
-    Serial.print("Joystick 1: ");
-    Serial.print(x);
-    Serial.print(", ");
-    Serial.print(y);
-    Serial.println();
+    DEBUG_OUTPUT("Joystick 1: ");
+    DEBUG_OUTPUT(x);
+    DEBUG_OUTPUT(", ");
+    DEBUG_OUTPUT(y);
+    DEBUG_OUTPUT('\n');
 
     Send(TYPE::JOYSTICK1, (uint16_t)x << 8 | y);
   }
 
   void SendJoystick2(uint8_t x, uint8_t y) {
-    Serial.print("Joystick 2: ");
-    Serial.print(x);
-    Serial.print(", ");
-    Serial.print(y);
-    Serial.println();
+    DEBUG_OUTPUT("Joystick 2: ");
+    DEBUG_OUTPUT(x);
+    DEBUG_OUTPUT(", ");
+    DEBUG_OUTPUT(y);
+    DEBUG_OUTPUT('\n');
 
     Send(TYPE::JOYSTICK2, (uint16_t)x << 8 | y);
   }
 };
 
-constexpr int pin_j1 = A0;
-constexpr int pin_j2 = A1;
-constexpr int pin_select = 11;
-constexpr int pin_mode = 12;
-constexpr int pin_start = A4;
-constexpr int pin_ir = 10;
+IrRemote remote(10);
 
-PushButton button_j1(pin_j1);
-PushButton button_j2(pin_j2);
-PushButton buttons[] = {PushButton(pin_j1), PushButton(pin_j2),
-                        PushButton(pin_select), PushButton(pin_mode),
-                        PushButton(pin_start)};
+Joystick joystick1(A5, A2, A3);
+Joystick joystick2(A5, A6, A7);
+
+PushButton directButtons[] = {PushButton(A0), PushButton(A1)};
 
 constexpr int rows = 2;
-constexpr int cols = 6;
-byte keys[rows][cols] = {{21, 22, 23, 24, 25, 26}, {27, 28, 29, 30, 31, 32}};
-byte pins_rows[rows] = {2, 3};
-byte pins_cols[cols] = {4, 5, 6, 7, 8, 9};
+constexpr int cols = 8;
+byte buttonMatrix[rows][cols] = {{21, 22, 23, 24, 25, 26, 27, 28},
+                                 {31, 32, 33, 34, 35, 36, 37, 38}};
+byte pinsRows[rows] = {11, 12};
+byte pinsCols[cols] = {2, 3, 4, 5, 6, 7, 8, 9};
 
-Keypad keypad = Keypad(makeKeymap(keys), pins_rows, pins_cols, rows, cols);
-
-IrRemote remote(pin_ir);
-
-Joystick joystick1(A3, A6);
-Joystick joystick2(A2, A7);
+Keypad keypad =
+    Keypad(makeKeymap(buttonMatrix), pinsRows, pinsCols, rows, cols);
 
 void setup() {
   Serial.begin(9600);
 
   remote.begin();
 
-  for (int i = 0; i < sizeof(buttons) / sizeof(PushButton); i++) {
-    buttons[i].begin();
+  for (int i = 0; i < sizeof(directButtons) / sizeof(PushButton); i++) {
+    directButtons[i].begin();
   }
 
   joystick1.begin();
@@ -172,8 +186,8 @@ void loop() {
     return;
   }
 
-  for (int i = 0; i < sizeof(buttons) / sizeof(PushButton); i++) {
-    if (buttons[i].isPushed()) {
+  for (int i = 0; i < sizeof(directButtons) / sizeof(PushButton); i++) {
+    if (directButtons[i].isPushed()) {
       remote.SendKey(i + 1);
       return;
     }
