@@ -9,6 +9,12 @@
 #define DECODE_NEC // Decodes NEC, NEC2, and ONKYO
 #include "src/IRremote.hpp"
 
+#ifdef NDEBUG
+#define DEBUG_OUTPUT(...) Serial.print(__VA_ARGS__)
+#else
+#define DEBUG_OUTPUT(...)
+#endif
+
 #ifdef abs
 #undef abs
 #endif
@@ -55,7 +61,9 @@ enum AnimationType {
   // fraction per milleseconds
   LinearToAt,
   // Change the value linearly by an increment, over a specified duration
-  LinearBy,
+  LinearByOver,
+  // Change the value linearly by an increment, at a specified speed
+  LinearByAt,
   // Maintain the value for a specified duration
   Constant
 };
@@ -64,31 +72,42 @@ struct Animation {
   AnimationType type;
   union {
     unsigned long millisDuration;
-    float speed; // amount per millisecond
+    float speed; // fraction per millisecond
   };
   float value;
 
-  static Animation linearToOver(float value, unsigned long duration) {
+  // to: absolute target value
+  // by: incremental value
+  // hold: maintain current value
+  // over: duration in milliseconds
+  // at: speed in fraction per millisecond
+  // now: instantaneously
+
+  static Animation toOver(float value, unsigned long duration) {
     return Animation{AnimationType::LinearToOver, {duration}, value};
   }
 
-  static Animation linearToAt(float value, float speed) {
+  static Animation toAt(float value, float speed) {
     return Animation{AnimationType::LinearToAt, {.speed = speed}, value};
   }
 
-  static Animation linearBy(float value, unsigned long duration) {
-    return Animation{AnimationType::LinearBy, {duration}, value};
+  static Animation byOver(float value, unsigned long duration) {
+    return Animation{AnimationType::LinearByOver, {duration}, value};
   }
 
-  static Animation instantTo(float value) {
+  static Animation byAt(float value, float speed) {
+    return Animation{AnimationType::LinearByAt, {.speed = speed}, value};
+  }
+
+  static Animation toNow(float value) {
     return Animation{AnimationType::LinearToOver, {0L}, value};
   }
 
-  static Animation instantBy(float value) {
-    return Animation{AnimationType::LinearBy, {0L}, value};
+  static Animation byNow(float value) {
+    return Animation{AnimationType::LinearByOver, {0L}, value};
   }
 
-  static Animation constantOver(unsigned long duration) {
+  static Animation holdOver(unsigned long duration) {
     return Animation{AnimationType::Constant, {duration}};
   }
 };
@@ -111,9 +130,10 @@ public:
       valueStart = value_;
     }
 
-    if (animation.type == AnimationType::LinearBy) {
-      // Calculate target value for LinearBy, since the parameter is the
-      // increment, not the target value.
+    if (animation.type == AnimationType::LinearByOver ||
+        animation.type == AnimationType::LinearByAt) {
+      // Calculate the target value based on the current value and the
+      // increment.
       constexpr float epsilon = 0.05;
       float valueCurrent = getValue();
       float valueTarget = clamp(valueCurrent + animation.value, 0.0f, 1.0f);
@@ -121,13 +141,16 @@ public:
         return;
       }
       animation.value = valueTarget;
-    } else if (animation.type == AnimationType::LinearToAt) {
-      // Calculate duration for LinearToAt, since the speed, not the duration,
-      // was given.
+    }
+
+    if (animation.type == AnimationType::LinearToAt ||
+        animation.type == AnimationType::LinearByAt) {
+      // Calculate the duration based on the speed and the increment.
       float valueCurrent = getValue();
 
       unsigned long duration =
           std::abs(animation.value - valueCurrent) / animation.speed;
+
       animation.millisDuration = duration;
     }
 
@@ -171,7 +194,8 @@ protected:
     switch (animation.type) {
     case AnimationType::LinearToOver:
     case AnimationType::LinearToAt:
-    case AnimationType::LinearBy: {
+    case AnimationType::LinearByOver:
+    case AnimationType::LinearByAt: {
       // Target value and duration should've already been calculated.
       float fraction = static_cast<float>(millisNow - millisStart) /
                        static_cast<float>(animation.millisDuration);
@@ -401,37 +425,40 @@ DY::Player audioPlayer(&Serial1);
 AudioQueue AudioQueue::audioQueue(audioPlayer);
 
 static unsigned long millisIdleStart;
-float breathingValue = 1;
+static float breathingPhase = 1; // a value in the range of [0-1]
 
 void setIdleBreathing() {
-  leftEye.setValue(breathingValue);
-  rightEye.setValue(breathingValue);
+  leftEye.setValue(breathingPhase);
+  rightEye.setValue(breathingPhase);
 }
+
 void resetIdleCount() {
   if (isIdling()) {
-    breathingValue = 1;
+    breathingPhase = 1;
   }
 
   millisIdleStart = millis();
 }
 
-bool isIdling() { return millis() - millisIdleStart >= 10000; }
+void setIdle() { millisIdleStart = 0; }
+
+bool isIdling() { return millis() - millisIdleStart >= 5000; }
 
 void demo() {
   // Hold, look left, right, then straight
   std::array<Animation, 5> headAnimation = {
-      Animation::linearToAt(0.5, 0.0005), Animation::constantOver(500),
-      Animation::linearToOver(0, 1000), Animation::linearToOver(1, 2000),
-      Animation::linearToOver(0.5, 1000)};
+      Animation::toAt(0.5, 0.0005), Animation::holdOver(500),
+      Animation::toOver(0, 1000), Animation::toOver(1, 2000),
+      Animation::toOver(0.5, 1000)};
   head.queueAnimations(headAnimation);
 
   // Hold, then blink twice
   std::array<Animation, 9> eyeAnimation = {
-      Animation::instantTo(1),        Animation::constantOver(4500),
-      Animation::linearToOver(0, 20), Animation::constantOver(100),
-      Animation::linearToOver(1, 20), Animation::constantOver(300),
-      Animation::linearToOver(0, 20), Animation::constantOver(100),
-      Animation::linearToOver(1, 20)};
+      Animation::toNow(1),      Animation::holdOver(4500),
+      Animation::toOver(0, 20), Animation::holdOver(100),
+      Animation::toOver(1, 20), Animation::holdOver(300),
+      Animation::toOver(0, 20), Animation::holdOver(100),
+      Animation::toOver(1, 20)};
   leftEye.queueAnimations(eyeAnimation);
   rightEye.queueAnimations(eyeAnimation);
 
@@ -452,106 +479,108 @@ void playNextAudio() {
 }
 
 void stop() {
-  std::array<Animation, 1> animations = {Animation::linearToOver(0, 200)};
+  std::array<Animation, 1> animations = {Animation::toOver(0, 200)};
   leftTread.queueAnimations(animations);
   rightTread.queueAnimations(animations);
 }
 
 void spinLeft() {
-  leftTread.queueAnimation(Animation::linearToOver(-1, 200));
-  rightTread.queueAnimation(Animation::linearToOver(1, 200));
+  leftTread.queueAnimation(Animation::toOver(-1, 200));
+  rightTread.queueAnimation(Animation::toOver(1, 200));
 }
 
 void spinRight() {
-  leftTread.queueAnimation(Animation::linearToOver(1, 200));
-  rightTread.queueAnimation(Animation::linearToOver(-1, 200));
+  leftTread.queueAnimation(Animation::toOver(1, 200));
+  rightTread.queueAnimation(Animation::toOver(-1, 200));
 }
 
 void forward() {
-  leftTread.queueAnimation(Animation::linearToOver(1, 200));
-  rightTread.queueAnimation(Animation::linearToOver(1, 200));
+  leftTread.queueAnimation(Animation::toOver(1, 200));
+  rightTread.queueAnimation(Animation::toOver(1, 200));
 }
 
 void backward() {
-  leftTread.queueAnimation(Animation::linearToOver(-1, 200));
-  rightTread.queueAnimation(Animation::linearToOver(-1, 200));
+  leftTread.queueAnimation(Animation::toOver(-1, 200));
+  rightTread.queueAnimation(Animation::toOver(-1, 200));
 }
 
 void forwardLeft() {
-  leftTread.queueAnimation(Animation::linearToOver(0, 200));
-  rightTread.queueAnimation(Animation::linearToOver(1, 200));
+  leftTread.queueAnimation(Animation::toOver(0, 200));
+  rightTread.queueAnimation(Animation::toOver(1, 200));
 }
 
 void forwardRight() {
-  leftTread.queueAnimation(Animation::linearToOver(1, 200));
-  rightTread.queueAnimation(Animation::linearToOver(0, 200));
+  leftTread.queueAnimation(Animation::toOver(1, 200));
+  rightTread.queueAnimation(Animation::toOver(0, 200));
 }
 
 void backwardLeft() {
-  leftTread.queueAnimation(Animation::linearToOver(0, 200));
-  rightTread.queueAnimation(Animation::linearToOver(-1, 200));
+  leftTread.queueAnimation(Animation::toOver(0, 200));
+  rightTread.queueAnimation(Animation::toOver(-1, 200));
 }
 
 void backwardRight() {
-  leftTread.queueAnimation(Animation::linearToOver(-1, 200));
-  rightTread.queueAnimation(Animation::linearToOver(0, 200));
+  leftTread.queueAnimation(Animation::toOver(-1, 200));
+  rightTread.queueAnimation(Animation::toOver(0, 200));
 }
 
 void leftArmMove(float value) {
-  leftArm.queueAnimation(Animation::linearBy(value, 100));
+  leftArm.queueAnimation(Animation::byAt(value, 0.001f));
 }
 
 void rightArmMove(float value) {
-  rightArm.queueAnimation(Animation::linearBy(value, 100));
+  rightArm.queueAnimation(Animation::byAt(value, 0.001f));
 }
 
-void leftArmUp() { leftArm.queueAnimation(Animation::linearToAt(1, 0.001f)); }
+void leftArmUp() { leftArm.queueAnimation(Animation::toAt(1, 0.001f)); }
 
-void leftArmDown() { leftArm.queueAnimation(Animation::linearToAt(0, 0.001f)); }
+void leftArmDown() { leftArm.queueAnimation(Animation::toAt(0, 0.001f)); }
 
-void rightArmUp() { rightArm.queueAnimation(Animation::linearToAt(1, 0.001f)); }
+void rightArmUp() { rightArm.queueAnimation(Animation::toAt(1, 0.001f)); }
 
-void rightArmDown() {
-  rightArm.queueAnimation(Animation::linearToAt(0, 0.001f));
-}
+void rightArmDown() { rightArm.queueAnimation(Animation::toAt(0, 0.001f)); }
 
 void breathe() {
-  std::array<Animation, 2> animations = {Animation::linearToOver(0, 2000),
-                                         Animation::linearToOver(1, 2000)};
+  std::array<Animation, 2> animations = {Animation::toOver(0, 2000),
+                                         Animation::toOver(1, 2000)};
   leftEye.queueAnimations(animations);
   rightEye.queueAnimations(animations);
 }
 
 void blinkTwice() {
   std::array<Animation, 7> animations = {
-      Animation::linearToOver(0, 20), Animation::constantOver(100),
-      Animation::linearToOver(1, 20), Animation::constantOver(300),
-      Animation::linearToOver(0, 20), Animation::constantOver(100),
-      Animation::linearToOver(1, 20)};
+      Animation::toOver(0, 20), Animation::holdOver(100),
+      Animation::toOver(1, 20), Animation::holdOver(300),
+      Animation::toOver(0, 20), Animation::holdOver(100),
+      Animation::toOver(1, 20)};
   leftEye.queueAnimations(animations);
   rightEye.queueAnimations(animations);
 }
 
-void lookLeft() { head.queueAnimation(Animation::linearToAt(0, 0.0005)); }
+void lookLeft() { head.queueAnimation(Animation::toAt(0, 0.0005)); }
 
-void lookRight() { head.queueAnimation(Animation::linearToAt(1, 0.0005)); }
+void lookRight() { head.queueAnimation(Animation::toAt(1, 0.0005)); }
 
-void lookStraight() { head.queueAnimation(Animation::linearToAt(0.5, 0.0005)); }
+void lookStraight() { head.queueAnimation(Animation::toAt(0.5, 0.0005)); }
+
+void rotateHeadBy(float value) {
+  head.queueAnimation(Animation::byAt(value, 0.0005));
+}
 
 void tiltEye() {
-  std::array<Animation, 3> animations = {Animation::linearToOver(1, 0),
-                                         Animation::linearToOver(1, 1600),
-                                         Animation::linearToOver(0, 0)};
+  std::array<Animation, 3> animations = {Animation::toOver(1, 0),
+                                         Animation::toOver(1, 1600),
+                                         Animation::toOver(0, 0)};
   eyeTilter.queueAnimations(animations);
 }
 
 void toggleLeftArm() {
   static uint8_t position = 1;
   if (position == 1) {
-    leftArm.queueAnimation(Animation::linearToOver(0, 1000));
+    leftArm.queueAnimation(Animation::toOver(0, 1000));
     position = 0;
   } else {
-    leftArm.queueAnimation(Animation::linearToOver(1, 1000));
+    leftArm.queueAnimation(Animation::toOver(1, 1000));
     position = 1;
   }
 }
@@ -559,10 +588,10 @@ void toggleLeftArm() {
 void toggleRightArm() {
   static uint8_t position = 1;
   if (position == 1) {
-    rightArm.queueAnimation(Animation::linearToOver(0, 1000));
+    rightArm.queueAnimation(Animation::toOver(0, 1000));
     position = 0;
   } else {
-    rightArm.queueAnimation(Animation::linearToOver(1, 1000));
+    rightArm.queueAnimation(Animation::toOver(1, 1000));
     position = 1;
   }
 }
@@ -570,17 +599,17 @@ void toggleRightArm() {
 void lookAround() {
   // Turn left, right, then straight
   std::array<Animation, 3> animations1 = {
-      Animation::linearToOver(0, 700),
-      Animation::linearToOver(1, 1400),
-      Animation::linearToOver(0.5, 700),
+      Animation::toOver(0, 700),
+      Animation::toOver(1, 1400),
+      Animation::toOver(0.5, 700),
   };
   // Open eyes, hold while turning head, then blink twice
   std::array<Animation, 9> animations2 = {
-      Animation::linearToOver(1, 0),  Animation::constantOver(3000),
-      Animation::linearToOver(0, 20), Animation::constantOver(100),
-      Animation::linearToOver(1, 20), Animation::constantOver(300),
-      Animation::linearToOver(0, 20), Animation::constantOver(100),
-      Animation::linearToOver(1, 20)};
+      Animation::toOver(1, 0),  Animation::holdOver(3000),
+      Animation::toOver(0, 20), Animation::holdOver(100),
+      Animation::toOver(1, 20), Animation::holdOver(300),
+      Animation::toOver(0, 20), Animation::holdOver(100),
+      Animation::toOver(1, 20)};
 
   head.queueAnimations(animations1);
   leftEye.queueAnimations(animations2);
@@ -616,8 +645,11 @@ void setup() {
   delay(50);
   audioPlayer.setVolume(15);
   delay(50);
+
+#ifndef NDEBUG
   // For some reason, the dyplayer reverses tracks 1 and 2.
   audioPlayer.playSpecified(2);
+#endif
 
   resetIdleCount();
 }
@@ -754,17 +786,8 @@ void loop() {
           right = ySign * max(abs(xNormalized), abs(yNormalized));
           left = ySign * (abs(yNormalized) - abs(xNormalized));
         }
-
         leftTread.setValue(left);
         rightTread.setValue(right);
-
-#ifdef NDEBUG
-        Serial.print("Tread L: ");
-        Serial.print(left);
-        Serial.print(" R: ");
-        Serial.print(right);
-        Serial.println();
-#endif
         break;
       }
 
@@ -806,18 +829,10 @@ void loop() {
         if (moveAmount != 0 && moveLeft) {
           leftArmMove(moveAmount);
           millisLastArmMove = millisNow;
-#ifdef NDEBUG
-          Serial.print("Arm L: ");
-          Serial.println(moveAmount);
-#endif
         }
         if (moveAmount != 0 && moveRight) {
           rightArmMove(moveAmount);
           millisLastArmMove = millisNow;
-#ifdef NDEBUG
-          Serial.print("Arm R: ");
-          Serial.println(moveAmount);
-#endif
         }
 
         break;
@@ -825,8 +840,61 @@ void loop() {
       case 1: {
         // Button push
         uint16_t key = value;
-        // TODO: assign buttons
-        demo();
+        switch (key) {
+        case 23: // L1
+          leftArmMove(0.1);
+          break;
+        case 24: // L2
+          leftArmMove(-0.1);
+          break;
+        case 21: // R1
+          rightArmMove(0.1);
+          break;
+        case 22: // R2
+          rightArmMove(-0.1);
+          break;
+        case 25: //
+          setIdle();
+          break;
+        case 26: // Mode
+          demo();
+          break;
+        case 28: //
+          playNextAudio();
+          break;
+        case 38: // Left
+          rotateHeadBy(-0.1);
+          break;
+        case 37: // Right
+          rotateHeadBy(0.1);
+          break;
+        case 36: // Up
+          lookStraight();
+          break;
+        case 35: // Down
+          tiltEye();
+          break;
+        case 32: // X
+          spinLeft();
+          break;
+        case 34: // Y
+          forward();
+          break;
+        case 31: // A
+          backward();
+          break;
+        case 33: // B
+          spinRight();
+          break;
+        case 1: // Joystick 1
+          stop();
+          break;
+        case 2: // Joystick 2
+          lookAround();
+          break;
+        default:
+          break;
+        }
         break;
       }
       }
@@ -834,6 +902,7 @@ void loop() {
   }
 
   if (isIdling()) {
+
     leftTread.setValue(0);
     rightTread.setValue(0);
 
@@ -841,9 +910,9 @@ void loop() {
     unsigned long idleDuration = (millis() - millisIdleStart) % breathingCycle;
 
     if (idleDuration < breathingCycle / 2.0) {
-      breathingValue = 1.0 - idleDuration / (breathingCycle / 2.0);
+      breathingPhase = 1.0 - idleDuration / (breathingCycle / 2.0);
     } else {
-      breathingValue = -1.0 + idleDuration / (breathingCycle / 2.0);
+      breathingPhase = -1.0 + idleDuration / (breathingCycle / 2.0);
     }
 
     setIdleBreathing();
