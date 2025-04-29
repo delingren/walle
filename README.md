@@ -46,6 +46,6 @@ The rest of the documentation is organized as follows.
 
 ## Demo
 
-Here is the demo of the final product, controlled by a Roku remote control and my custom remote control.
+Here is the demo video of the final product, controlled by a Roku remote control and my custom remote control. It opens on youtube.
 
 [![demo](http://img.youtube.com/vi/PiLhb5Huz5E/0.jpg)](http://www.youtube.com/watch?v=PiLhb5Huz5E)
