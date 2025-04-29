@@ -48,4 +48,4 @@ The rest of the documentation is organized as follows.
 
 Here is the demo of the final product, controlled by a Roku remote control and my custom remote control.
 
-![demo](./media/IMG_1097.mov)
+[![demo](http://img.youtube.com/vi/PiLhb5Huz5E/0.jpg)](http://www.youtube.com/watch?v=PiLhb5Huz5E)
