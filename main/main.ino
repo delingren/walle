@@ -780,11 +780,11 @@ void loop() {
 
         float left, right;
         if (xSign == ySign) {
-          left = ySign * max(abs(xNormalized), abs(yNormalized));
-          right = ySign * (abs(yNormalized) - abs(xNormalized));
-        } else {
           right = ySign * max(abs(xNormalized), abs(yNormalized));
           left = ySign * (abs(yNormalized) - abs(xNormalized));
+        } else {
+          left = ySign * max(abs(xNormalized), abs(yNormalized));
+          right = ySign * (abs(yNormalized) - abs(xNormalized));
         }
         leftTread.setValue(left);
         rightTread.setValue(right);

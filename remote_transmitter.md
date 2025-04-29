@@ -196,11 +196,11 @@ Then we can interpolate all the positions in between. Ideally, the range of moti
 
 ```
 if (sign(x) == sign(y)) {
-  l = sign(y)*max(|x|,|y|);
-  r = sign(y)*(|y|-|x|);
-} else {
   r = sign(y)*max(|x|,|y|);
   l = sign(y)*(|y|-|x|);
+} else {
+  l = sign(y)*max(|x|,|y|);
+  r = sign(y)*(|y|-|x|);
 }
 ```
 
