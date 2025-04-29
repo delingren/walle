@@ -853,13 +853,13 @@ void loop() {
         case 22: // R2
           rightArmMove(-0.1);
           break;
-        case 25: //
+        case 25: // Select
           setIdle();
           break;
         case 26: // Mode
           demo();
           break;
-        case 28: //
+        case 28: // Start
           playNextAudio();
           break;
         case 38: // Left

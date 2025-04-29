@@ -165,6 +165,8 @@ I'm using [`sendNECRaw()`](https://github.com/Arduino-IRremote/Arduino-IRremote/
   - 1: Button code
   - 2 & 3: these two bytes contain the X and Y coordinates. Each coordinate is a unsigned 8 bit integer. This gives us the range of [0 - 255] for either axis.
 
+In the next section, let's look at how the code is decoded and interpreted at the receiving side.
+
 ## Control Treads with a Joystick
 Wall-E's movements are controlled by two treads, just like a tank or a bulldozer. The left and right treads can move independently. And I want to use a joystick to control its movements. Since a 2-axis joystick has 2 degrees of freedom, just like the treads, it should be possible to map the joystick positions to the tread movements precisely. And I want the mapping to be intuitive as well. It turned out that this isn't super trivial. So I am going to elaborate a little in this section.
 

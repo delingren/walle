@@ -40,6 +40,8 @@ The rest of the documentation is organized as follows.
 
 * [Firmware](firmware.md)
 
-## Schematic
+* Schematics
+  - [Main unit](./schematic-main.svg)
+  - [Remote control](./schematic-remote.svg)
 
-![schematic](schematic.svg)
+## Demo
