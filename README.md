@@ -45,3 +45,7 @@ The rest of the documentation is organized as follows.
   - [Remote control](./schematic-remote.svg)
 
 ## Demo
+
+Here is the demo of the final product, controlled by a Roku remote control and my custom remote control.
+
+![demo](./media/IMG_1097.mov)
