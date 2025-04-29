@@ -10,7 +10,7 @@ My plan is to control it with a microcontroller. I already made a v1 but didn't 
 1. The arms can lift and lower independently. They only have one degree of freedom. It'd be too complicated to make them do more than that.
 1. The head can turn left and right.
 1. The eyes can light up. They each have a blue LED inside.
-1. The eyesbrows can raise and lower, which is done by tilting the eyes around the center.
+1. The eyebrows can raise and lower, which is done by tilting the eyes around the center.
 1. It can play pre-recorded sounds.
 1. It can be controlled with a remote control.
 

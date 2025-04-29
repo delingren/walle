@@ -42,7 +42,7 @@ To remove battery compartment, first loosen the single screw to remove the back 
 
 ![cover](./media/IMG_0782.jpeg)
 
-These four screws need a special triangle bit that I don't have. But a T7 torx worked fine. I will replace them with normal 2.5x8 screws.
+These four screws need a special triangle bit that I don't have. But a T7 Torx worked fine. I will replace them with normal 2.5x8 screws.
 
 ![battery](./media/IMG_0781.jpeg)
 

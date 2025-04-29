@@ -4,7 +4,7 @@ There are two independent parts. One for the main toy and one for the remote con
 
 ## Main
 
-The firmware is relatively straight-forward. One thing worth mentioning is animation. When we recieve a command, such as turning the head, we want the operation to be rather smooth. So, instead of setting the position immediately, we animate the transition to the target position. Animation is also needed to create breathing patterns in the eyes. This also applies to the speed of the motors so that they accelerate and decelarate smoothly. So I am defining an `Animatable` class and keep a list of ongoing animations at any moment.
+The firmware is relatively straight-forward. One thing worth mentioning is animation. When we receive a command, such as turning the head, we want the operation to be rather smooth. So, instead of setting the position immediately, we animate the transition to the target position. Animation is also needed to create breathing patterns in the eyes. This also applies to the speed of the motors so that they accelerate and decelerate smoothly. So I am defining an `Animatable` class and keep a list of ongoing animations at any moment.
 
 Then I have these kinds of animations.
 1. Linear transition to a target value over a specified duration.

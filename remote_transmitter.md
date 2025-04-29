@@ -1,15 +1,15 @@
 # Custom Remote Control
 
-In addition to using an existing remote control, I also wanted to make my own remote control with joysticks. The biggest challenge is probably 3d pringing the housing. So I am exploring the option of using an existing wireless PS2 control bought on AliExpress, gutting the insides and replacing it with a microcontroller and adding a IR LED.
+In addition to using an existing remote control, I also wanted to make my own remote control with joysticks. The biggest challenge is probably 3d printing the housing. So I am exploring the option of using an existing wireless PS2 control bought on AliExpress, gutting the insides and replacing it with a microcontroller and adding a IR LED.
 
 To do that, there are a few things I need to figure out.
 
-1. The joysticks. A PS2 controller has two of them. They are both 2-axis joysticks. I assume they are resistive (i.e. pototiometers) and I should be able to use an ADC pin to read the position of an axis.
+1. The joysticks. A PS2 controller has two of them. They are both 2-axis joysticks. I assume they are resistive (i.e. potentiometers) and I should be able to use an ADC pin to read the position of an axis.
 1. The IR emitter. This should be relatively easy. The library I use on the receiver side is also capable of sending.
 1. The microcontroller. The PS2 controller is powered by 2 AAA batteries, I want to be able to reuse the power source. So I need an mcu that can be powered at 3V. First thing that came to my mind is ATmega 328. I have a couple of them and they are 8MHz versions.
 
 ## Microcontroller
-As mentioned before, I intend to use an 8MHz ATmega328 devboard (Arduino Pro Mini clones), which should be able to run at 3V comofortably. So I am going to prototype everything on that board. One small caveat about working with this board is that ATmega328 comes in two versions: 8Mhz and 16MHz. When programming with Arduino IDE or CLI, we need to choose the correct frequency. Otherwise, the code will still run, but the timing is all messed up. Anything that relies on the frequency will not work properly. E.g. the serial console or the IR transmitter.
+As mentioned before, I intend to use an 8MHz ATmega328 devboard (Arduino Pro Mini clones), which should be able to run at 3V comfortably. So I am going to prototype everything on that board. One small caveat about working with this board is that ATmega328 comes in two versions: 8Mhz and 16MHz. When programming with Arduino IDE or CLI, we need to choose the correct frequency. Otherwise, the code will still run, but the timing is all messed up. Anything that relies on the frequency will not work properly. E.g. the serial console or the IR transmitter.
 
 ## IR transmitter
 I have some generic 940 nm IR LEDs from Amazon and I intend to use one. These LEDs are rather finicky and very direction sensitive. The GPIO pins have enough juice to drive them. I tried to use a BJT to bump up its wattage. But it turned out that the 3V battery doesn't have enough juice to drive it. Its voltage would drop too much and the MCU would brown out. So I am stuck with the low wattage. It works OK within 1.5 meters and with a line of sight. Otherwise, the reception gets very finicky. There might be some LEDs with a lower voltage drop that would work better at 3V. But for now, I'm happy with what I have. For a future version, there are a couple of changes I want to make:
@@ -64,7 +64,7 @@ The MCU itself can be powered by 1.8-5.5V DC. And since I'm using batteries, I d
 
 ## Controller Wiring
 
-I got a couple of different wireless gamepad controllers from AliExpress and disassembled them. They both have tow major PCBs. PCB1, the main PCB, contains the battery box, the IC and various buttons. PCB2 contains two joysticks and a switch. Long story short, this particular one's main PCB has everything I need and needs minimum modification. However, it turned out its joysticks are digital, not analog. On the other hand, the other contoller's joysticks are analog and the PCB has the same dimentions. So I created a Frankenstein controller from both of them.
+I got a couple of different wireless gamepad controllers from AliExpress and disassembled them. They both have tow major PCBs. PCB1, the main PCB, contains the battery box, the IC and various buttons. PCB2 contains two joysticks and a switch. Long story short, this particular one's main PCB has everything I need and needs minimum modification. However, it turned out its joysticks are digital, not analog. On the other hand, the other controller's joysticks are analog and the PCB has the same dimensions. So I created a Frankenstein controller from both of them.
 
 PCB1 contains:
 * Left thumb: `L`, `R`, `U`, `D`
@@ -172,9 +172,9 @@ Wall-E's movements are controlled by two treads, just like a tank or a bulldozer
 
 Let's denotes the movements of the two treads first. They can move forward or backwards. Let's use 1 to denote a full speed forward move, -1 for a full speed backward move, and 0 for no movements. So, for Wall-E to move forward full speed, we need a (1,1); a full speed backward movement can be achieved by a (-1,-1). To spin in place left, we need a (-1,-1); to make a left turn pivoting on the left tread, we need a (0,1), etc etc.
 
-Now consider the movements of the joystick. When the joystick is in the neutral position, there should be no movements. We want the control to be intuitive. So, pushing the joystck forward and backward along the Y-axis should make Wall-E to move along a straight line and the direction and speed are dependent on the joystick's position relative to the neaural position. Similarly, when the joystick moves along the X-axis, we should be spinning in place. When the joystick is in the upper-left corner, we should be making a left turn pivoting on the left tread. And so on and so forth.
+Now consider the movements of the joystick. When the joystick is in the neutral position, there should be no movements. We want the control to be intuitive. So, pushing the joystick forward and backward along the Y-axis should make Wall-E to move along a straight line and the direction and speed are dependent on the joystick's position relative to the neutral position. Similarly, when the joystick moves along the X-axis, we should be spinning in place. When the joystick is in the upper-left corner, we should be making a left turn pivoting on the left tread. And so on and so forth.
 
-Now, we can plot the nine key positions and the tread values. And we can draw arrows to represent the joystick movements from one position to another and the trends of the tread values along the way. And we will represent the position of the joystick with a normalized 2-dimensional coordiate. `(-1,1)*(-1,1)`.
+Now, we can plot the nine key positions and the tread values. And we can draw arrows to represent the joystick movements from one position to another and the trends of the tread values along the way. And we will represent the position of the joystick with a normalized 2-dimensional coordinate. `(-1,1)*(-1,1)`.
 
 ```
             l-               l=

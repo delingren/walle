@@ -33,9 +33,9 @@ I have a few [RP2040-Zero dev boards](https://www.waveshare.com/rp2040-zero.htm)
 * Dimensions: 18 x 23.5
 * Regulator: ME6217 (LDO, 800mA, max input 6.5V)
 * GPIOs: 20 via the header, all capable of PWM.
-* UART: 2; UART0 defauts to GPIO0(Tx) and GPIO1(Rx).
+* UART: 2; UART0 defaults to GPIO0(Tx) and GPIO1(Rx).
 
-It seems to fit the bill really well. So I'll be using it during the protoyping phase and see if it works for everything.
+It seems to fit the bill really well. So I'll be using it during the prototyping phase and see if it works for everything.
 
 First off, let's verify that all the GPIO pins are PWM capable by using a simple sketch to dim LEDs.
 

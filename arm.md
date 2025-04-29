@@ -1,6 +1,6 @@
 # Controlling arms
 
-I am going to use servos to control the rotation of the arms and the head. Mechanically, the arms pose a small challenge. I can't disassmble the arm assembly any further without risking damaging the plastic. So I can't get to the axles that the arms rotate around. But I came up with a reasonable solution using the existing mechanism, not requiring the servo shaft and the arm axles to be concentric.
+I am going to use servos to control the rotation of the arms and the head. Mechanically, the arms pose a small challenge. I can't disassemble the arm assembly any further without risking damaging the plastic. So I can't get to the axles that the arms rotate around. But I came up with a reasonable solution using the existing mechanism, not requiring the servo shaft and the arm axles to be concentric.
 
 ![arm_servo](./media/IMG_0799.jpeg)
 

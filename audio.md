@@ -48,7 +48,7 @@ void loop() {
 
 And voila! A couple of caveats to mention:
 
-1. For some reason, reading file count is not very reliable on this board. I think it's this particular board, since I didn't have any issues in the paste. No big deal, I just need to hard code it.
+1. For some reason, reading file count is not very reliable on this board. I think it's this particular board, since I didn't have any issues in the past. No big deal, I just need to hard code it.
 1. The board takes 5V DC but I am going to power everything with 4xAA batteries and I hope to get away without using a regulator. It seems to be able to tolerate 6V. But it's safer to put a 1N1007 diode in serial to drop 0.7V.
 
 ## DY-SV17F

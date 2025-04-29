@@ -2,9 +2,9 @@
 
 ## Electronics
 
-I am dividing the electronics into two parts. The lower part is mounted on the chasis near the drive train. It contains the MCU, the audio player, and the H-bridges. The upper part is basically a hub for everything related to the head, arms, IR remote, and the push button. The two parts are connected with a ribbon cable and Dupont connectors.
+I am dividing the electronics into two parts. The lower part is mounted on the chassis near the drive train. It contains the MCU, the audio player, and the H-bridges. The upper part is basically a hub for everything related to the head, arms, IR remote, and the push button. The two parts are connected with a ribbon cable and Dupont connectors.
 
-The power source is first fed to the switch. The switched power is fed to both the upper and the lower parts. The switch is a three way one. In addition to on and off, there is also a "play" mode. In that mode, the brown and purple wires are connected. I could potentially utilize it and read it in the MCU. I am not really sure what to do with the information though. So I am skipping it and keeping it simple. So here's the finished switch, with one input and two outputs. The connectors are 2-pin JST RCYs. The female end can be directly plugged into standard 2.54mm Dupont male connectors. I had to enlarge the exisitng holes on the switch PCB using a small file. Otherwise it's rather trivial to cut existing wires and solder new ones.
+The power source is first fed to the switch. The switched power is fed to both the upper and the lower parts. The switch is a three way one. In addition to on and off, there is also a "play" mode. In that mode, the brown and purple wires are connected. I could potentially utilize it and read it in the MCU. I am not really sure what to do with the information though. So I am skipping it and keeping it simple. So here's the finished switch, with one input and two outputs. The connectors are 2-pin JST RCYs. The female end can be directly plugged into standard 2.54mm Dupont male connectors. I had to enlarge the existing holes on the switch PCB using a small file. Otherwise it's rather trivial to cut existing wires and solder new ones.
 
 ![switch](./media/IMG_0359.jpeg)
 
@@ -17,7 +17,7 @@ I managed to solder everything in the lower part onto a 50mmx70mm perf board. It
 
 ![lower_pcb](./media/IMG_0357.jpeg)
 
-The PCB is then mounted to the chasis using a 3D printed mount.
+The PCB is then mounted to the chassis using a 3D printed mount.
 
 ![mounted_pcb](./media/IMG_0828.jpeg)
 
@@ -37,7 +37,7 @@ Now the upper part. I want to have a neat interface between the upper part and t
 
 ## Mechanics
 
-For the main drive train, I am mounting the DC motors directly the to driving wheels, using 3d printed parts. The motors are connected to the outputs of the H-bridges. I was originally planning on using a couple of N20 5V 100rpm motors. But it turned out that they don't have enough torque. There is too much friction in the system (let's face it, none of the parts are precisesly made and positioned, and there's no lubrication at all). So I ended up using two N30 6V 75rpm versions. They seemed to work fine.
+For the main drive train, I am mounting the DC motors directly the to driving wheels, using 3d printed parts. The motors are connected to the outputs of the H-bridges. I was originally planning on using a couple of N20 5V 100rpm motors. But it turned out that they don't have enough torque. There is too much friction in the system (let's face it, none of the parts are precisely made and positioned, and there's no lubrication at all). So I ended up using two N30 6V 75rpm versions. They seemed to work fine.
 
 ![drive_train](./media/IMG_0816.jpeg)
 
@@ -64,11 +64,11 @@ For the lower part:
 
 1. Verify both DC motors can turn both directions and the speed can be controlled with PWM pins
 
-To interact with the MCU after everything is mounted and connected, I made a USB-C cable without the +5V wire. This way, I can power everything with an external power source instead of the computer's USB hub. Instead of connecting the power input to the battery case, I leave the battery case unassembled and power it with a bench power. This way, I can leave the back open for easier debugging.
+To interact with the MCU after everything is mounted and connected, I made a USB-C cable without the +5V wire. This way, I can power everything with an external power source instead of the computer's USB hub. Instead of connecting the power input to the battery case, I leave the battery case disassembled and power it with a bench power. This way, I can leave the back open for easier debugging.
 
 ![lower](./media/IMG_0873.mov)
 
-Finally, before closing it up, I am exposing a USB-C port for uploading sketches and debugging through the serial port. To do this, I cut a hole at the bottom of the chasis, and mounted a panel-mount USB-C port (bought from AliExpress). Then soldered a male USB-C plug on it. Note that I am not connecting the V+ wire, to avoid accidental current backflow to the computer. So it needs to be powered by the batteries when uploading the sketch.
+Finally, before closing it up, I am exposing a USB-C port for uploading sketches and debugging through the serial port. To do this, I cut a hole at the bottom of the chassis, and mounted a panel-mount USB-C port (bought from AliExpress). Then soldered a male USB-C plug on it. Note that I am not connecting the V+ wire, to avoid accidental current backflow to the computer. So it needs to be powered by the batteries when uploading the sketch.
 
 ![bottom_usb](./media/IMG_0888.jpeg)
 ![top_usb](./media/IMG_0887.jpeg)

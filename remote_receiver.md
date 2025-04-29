@@ -72,6 +72,6 @@ The particular remote I want to use is a Roku remote. It seems to use NEC and NE
 
 A couple of notes:
 * It looks like the receivers have no problem with 6V DC. So I am going to connect them directly to the power source. They are dirt cheap, so no biggie if I blow up a couple.
-* Putting two receivers in paralell doesn't seem to cause any problems. So that's what I am going to do.
+* Putting two receivers in parallel doesn't seem to cause any problems. So that's what I am going to do.
 
 I also want to be able to make my own joystick IR remote. To do that, I can either devise my own protocol, since I have full control on both sides, or piggyback on an existing one, as long as it's capable of encoding all the info I need. The IR library I use is capable of both decoding and encoding.
