@@ -44,6 +44,9 @@ The rest of the documentation is organized as follows.
   - [Main unit](./schematic-main.svg)
   - [Remote control](./schematic-remote.svg)
 
+* 3D models
+  - [Fusion 360 file](./wall-e.f3d)
+  - [STL files](./stl/)
 ## Demo
 
 Here is the demo video of the final product, controlled by a Roku remote control and my custom remote control. It opens on youtube.
