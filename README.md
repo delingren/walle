@@ -54,7 +54,7 @@ Here is the demo video of the final product, controlled by a Roku remote control
 
 In the next version, I am planning to make these improvements.
 
-* More powerful H-bridge. In this version, I am using two 6V/75RPM N30 motors. They are a little slow. But faster motors don't seem to have enough torque. I suspect the problem is the H-bridge IC not providing enough current. In the next version, I'll try to root cause the issue and possibly replace the H-bridge with an L298N breakout board.
+* More powerful H-bridge. In this version, I am using two 6V/75RPM N30 motors. They are a little slow. But faster motors don't seem to have enough torque. I suspect the problem is the H-bridge IC not providing enough current/voltage. In the next version, I'll try to root cause the issue and possibly replace the H-bridge with an L298N breakout board.
 * Improve remote control range. The range of my custom remote control is rather poor, running on 3V. There are a few possible solutions I can think of, in order of increasing complexity.
   - Use an IR LED with less forward voltage drop.
   - Use 433MHz RF transmitter and receiver instead of IR. I think the IR protocols are [OOF](https://en.wikipedia.org/wiki/On–off_keying) modulated. So I should be able to connect the RF receiver to the same pin as the IR receiver and use the same protocol. The library doesn't care about the transmission medium, after all.
