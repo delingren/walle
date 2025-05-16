@@ -53,8 +53,8 @@ The rest of the documentation is organized as follows.
 * [Firmware](firmware.md)
 
 * Schematics
-  - [Main unit](./schematic-main.svg)
-  - [Remote control](./schematic-remote.svg)
+  - [Main unit](./schematics/main.svg)
+  - [Remote control](./schematics/remote.svg)
 
 * 3D models
   - [Fusion 360 file](./wall-e.f3d)
