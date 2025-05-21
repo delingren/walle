@@ -1,4 +1,0 @@
-{
-  "board": "arduino:avr:pro",
-  "sketch": "main/main.ino"
-}
