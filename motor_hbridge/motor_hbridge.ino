@@ -1,37 +1,50 @@
-int left1 = 11;
-int left2 = 10;
-int right1 = 12;
-int right2 = 13;
+// Motor A
+int pwmA = 14;
+int in1A = 12;
+int in2A = 13;
+
+// Motor B
+int pwmB = 9;
+int in1B = 11;
+int in2B = 10;
+
+int speed = 255;
 
 void setup() {
-  pinMode(left1, OUTPUT);
-  pinMode(left2, OUTPUT);
-  pinMode(right1, OUTPUT);
-  pinMode(right2, OUTPUT);
+
+  // Set all the motor control pins to outputs
+
+  pinMode(pwmA, OUTPUT);
+  pinMode(pwmB, OUTPUT);
+  pinMode(in1A, OUTPUT);
+  pinMode(in2A, OUTPUT);
+  pinMode(in1B, OUTPUT);
+  pinMode(in2B, OUTPUT);
+
+  Serial.begin(115200);
 }
 
 void loop() {
-  static int speed = 0;
-  static int inc = 1;
 
-  if (speed >= 0) {
-    analogWrite(left1, speed);
-    analogWrite(left2, 0);
+  // Set Motor A forward
 
-    analogWrite(right1, 0);
-    analogWrite(right2, speed);
-  } else {
-    analogWrite(left1, 0);
-    analogWrite(left2, -speed);
-    
-    analogWrite(right1, -speed);
-    analogWrite(right2, 0);
+  digitalWrite(in1A, HIGH);
+  digitalWrite(in2A, LOW);
+
+  // Set Motor B backward
+
+  digitalWrite(in1B, LOW);
+  digitalWrite(in2B, HIGH);
+
+  analogWrite(pwmA, speed);
+  analogWrite(pwmB, speed);
+
+  Serial.println(speed);
+
+  speed -= 50;
+
+  if (speed <= 105) {
+    speed = 255;
   }
-
-  speed += inc;
-  if (speed >= 255 || speed <= -255) {
-    inc = - inc;
-  }
-  
-  delay(10);
+  delay(3000);
 }
