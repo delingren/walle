@@ -33,17 +33,22 @@ void resetIdleCount();
 
 // Pin assignments
 constexpr uint8_t pinIrRemote = 3;
-constexpr uint8_t pinPushButton = 9;
+constexpr uint8_t pinPushButton = 15;
 constexpr uint8_t pinEyeTilter = 2;
 constexpr uint8_t pinEyeLedL = 4;
 constexpr uint8_t pinEyeLedR = 5;
 constexpr uint8_t pinHead = 6;
 constexpr uint8_t pinArmL = 7;
 constexpr uint8_t pinArmR = 8;
-constexpr uint8_t pinMotorL1 = 10;
-constexpr uint8_t pinMotorL2 = 11;
-constexpr uint8_t pinMotorR1 = 12;
-constexpr uint8_t pinMotorR2 = 13;
+constexpr uint8_t pinMotorLs = 14;
+constexpr uint8_t pinMotorL1 = 12;
+constexpr uint8_t pinMotorL2 = 13;
+constexpr uint8_t pinMotorRs = 9;
+constexpr uint8_t pinMotorR1 = 11;
+constexpr uint8_t pinMotorR2 = 10;
+constexpr uint8_t pinTrialMode = 26;
+constexpr unsigned int millisIdle = 10000;
+constexpr unsigned int millisBreathing = 3600;
 
 // Servo limits, in terms of pulse width in microseconds
 constexpr int minArmL = 2200;
@@ -58,7 +63,7 @@ enum AnimationType {
   // milliseconds
   LinearToOver,
   // Change the value linearly to a target value, at a specified speed, in
-  // fraction per milleseconds
+  // fraction per milliseconds
   LinearToAt,
   // Change the value linearly by an increment, over a specified duration
   LinearByOver,
@@ -283,35 +288,38 @@ private:
 
 // Bidirectional motor, controlled by an H-bridge
 class BiMotor : public Animatable {
-  static constexpr float low_threshold = 0.1;
+  static constexpr float minValue = 0.20;
 
 public:
-  BiMotor(uint8_t pin1, uint8_t pin2) : pin1_(pin1), pin2_(pin2), Animatable() {
+  BiMotor(uint8_t pinSpeed, uint8_t pin1, uint8_t pin2)
+      : pinSpeed_(pinSpeed), pin1_(pin1), pin2_(pin2), Animatable() {
+    pinMode(pinSpeed, OUTPUT);
     pinMode(pin1, OUTPUT);
     pinMode(pin2, OUTPUT);
   }
 
   void setValue(float value) override {
-    Animatable::setValue(value);
-
-    int value1;
-    int value2;
-    if (abs(value) < low_threshold) {
-      value1 = 0;
-      value2 = 0;
-    } else if (value > 0) {
-      value1 = 0;
-      value2 = static_cast<int>(value * 255.0);
-    } else {
-      value1 = static_cast<int>(-value * 255.0);
-      value2 = 0;
+    if (std::abs(value) <= minValue) {
+      value = 0;
     }
 
-    analogWrite(pin1_, value1);
-    analogWrite(pin2_, value2);
+    Animatable::setValue(value);
+
+    if (value > 0) {
+      digitalWrite(pin1_, 1);
+      digitalWrite(pin2_, 0);
+    } else if (value < 0) {
+      digitalWrite(pin1_, 0);
+      digitalWrite(pin2_, 1);
+    } else {
+      digitalWrite(pin1_, 0);
+      digitalWrite(pin2_, 0);
+    }
+    analogWrite(pinSpeed_, static_cast<int>(std::abs(value) * 255.0));
   }
 
 private:
+  uint8_t pinSpeed_;
   uint8_t pin1_;
   uint8_t pin2_;
 };
@@ -415,8 +423,8 @@ AnimatableServo head(pinHead, minHead, maxHead);
 AnimatableServo leftArm(pinArmL, minArmL, maxArmL);
 AnimatableServo rightArm(pinArmR, minArmR, maxArmR);
 UniMotor eyeTilter(pinEyeTilter);
-BiMotor leftTread(pinMotorL1, pinMotorL2);
-BiMotor rightTread(pinMotorR1, pinMotorR2);
+BiMotor leftTread(pinMotorLs, pinMotorL1, pinMotorL2);
+BiMotor rightTread(pinMotorRs, pinMotorR1, pinMotorR2);
 Led leftEye(pinEyeLedL);
 Led rightEye(pinEyeLedR);
 PushButton pushButton(pinPushButton);
@@ -424,13 +432,9 @@ PushButton pushButton(pinPushButton);
 DY::Player audioPlayer(&Serial1);
 AudioQueue AudioQueue::audioQueue(audioPlayer);
 
-static unsigned long millisIdleStart;
-static float breathingPhase = 1; // a value in the range of [0-1]
-
-void setIdleBreathing() {
-  leftEye.setValue(breathingPhase);
-  rightEye.setValue(breathingPhase);
-}
+unsigned long millisIdleStart;
+float breathingPhase = 1; // a value in the range of [0-1]
+boolean trialMode = false;
 
 void resetIdleCount() {
   if (isIdling()) {
@@ -442,7 +446,7 @@ void resetIdleCount() {
 
 void setIdle() { millisIdleStart = 0; }
 
-bool isIdling() { return millis() - millisIdleStart >= 5000; }
+bool isIdling() { return millis() - millisIdleStart >= millisIdle; }
 
 void demo() {
   // Hold, look left, right, then straight
@@ -462,9 +466,9 @@ void demo() {
   leftEye.queueAnimations(eyeAnimation);
   rightEye.queueAnimations(eyeAnimation);
 
-  // Wait, then play walle-e
+  // Wait, then play wall-e sound
   AudioQueue::queueDelay(5000);
-  AudioQueue::queuePlay(2);
+  AudioQueue::queuePlay(1);
 }
 
 void playNextAudio() {
@@ -645,11 +649,16 @@ void setup() {
   delay(50);
   audioPlayer.setVolume(15);
   delay(50);
+  // audioPlayer.playSpecified(1);
 
-#ifndef NDEBUG
-  // For some reason, the dyplayer reverses tracks 1 and 2.
-  audioPlayer.playSpecified(2);
-#endif
+  pinMode(pinTrialMode, INPUT_PULLUP);
+  trialMode = digitalRead(pinTrialMode);
+
+  if (trialMode) {
+    demo();
+  } else {
+    AudioQueue::queuePlay(1);
+  }
 
   resetIdleCount();
 }
@@ -814,7 +823,7 @@ void loop() {
         bool moveLeft = xNormalized <= thresholdRight;
         bool moveRight = xNormalized >= thresholdLeft;
 
-        // Calcualte the amount to move: nothing, a little, or a lot.
+        // Calculate the amount to move: nothing, a little, or a lot.
         float ySign = yNormalized >= 0 ? 1 : -1;
         float yAbsolute = abs(yNormalized);
         float moveAmount;
@@ -902,19 +911,18 @@ void loop() {
   }
 
   if (isIdling()) {
-
     leftTread.setValue(0);
     rightTread.setValue(0);
 
-    constexpr unsigned long breathingCycle = 3600;
-    unsigned long idleDuration = (millis() - millisIdleStart) % breathingCycle;
+    unsigned long idleDuration = (millis() - millisIdleStart) % millisBreathing;
 
-    if (idleDuration < breathingCycle / 2.0) {
-      breathingPhase = 1.0 - idleDuration / (breathingCycle / 2.0);
+    if (idleDuration < millisBreathing / 2.0) {
+      breathingPhase = 1.0 - idleDuration / (millisBreathing / 2.0);
     } else {
-      breathingPhase = -1.0 + idleDuration / (breathingCycle / 2.0);
+      breathingPhase = -1.0 + idleDuration / (millisBreathing / 2.0);
     }
 
-    setIdleBreathing();
+    leftEye.setValue(breathingPhase);
+    rightEye.setValue(breathingPhase);
   }
 }
