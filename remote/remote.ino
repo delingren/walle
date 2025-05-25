@@ -3,8 +3,8 @@
 #include <IRremote.hpp>
 #include <Keypad.h>
 
-// #define NDEBUG
-#undef NDEBUG
+#define NDEBUG 1
+// #undef NDEBUG
 
 #ifdef NDEBUG
 #define DEBUG_OUTPUT(...) Serial.print(__VA_ARGS__)
