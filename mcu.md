@@ -9,11 +9,15 @@ We need to choose a microcontroller. I am not going to make a custom PCB for thi
 Here's a tally of all the pins.
 
 * PWM output: 7 pins
-  - Left tread H bridge (2 pins)
-  - Right tread H bridge (2 pins)
+  - Left tread H bridge (1)
+  - Right tread H bridge (1)
   - Left eye LED
   - Right eye LED
   - Eye tilt motor
+
+* Digital output: 4 pins
+  - Left tread H bridge (2)
+  - Right tread H bridge (2)
 
 * Servos: 3 pins. Generally, libraries use PWM to control servos. Some may use PIO on Pi Pico.
   - Left arm servo
