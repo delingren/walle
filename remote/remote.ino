@@ -12,54 +12,73 @@
 #define DEBUG_OUTPUT(...)
 #endif
 
+class KeyMatrix {
+private:
+  int rows_, cols_;
+  uint8_t *pinsRows_, *pinsCols_;
+  byte *state;
+
+public:
+  // No memory management for row and col pin arrays. Pass arrays on the heap.
+  KeyMatrix(int rows, int cols, uint8_t *pinsRows, uint8_t *pinsCols)
+      : rows_(rows), cols_(cols), pinsRows_(pinsRows), pinsCols_(pinsCols) {
+    state = (byte *)malloc(rows *
+                           ((cols + 1) >> 3)); // (cols+1)>>3 == ceiling(cols/8)
+  }
+
+  void begin() {
+    for (int r = 0; r < rows_; r++) {
+      pinMode(pinsRows_[r], OUTPUT);
+      digitalWrite(pinsRows_[r], HIGH);
+    }
+    for (int c = 0; c < cols_; c++) {
+      pinMode(pinsCols_[c], INPUT_PULLUP);
+    }
+  }
+
+  byte *read() {
+    for (int r = 0; r < rows_; r++) {
+      digitalWrite(pinsRows_[r], LOW);
+      for (int c = 0; c < cols_; c++) {
+        setState(r, c, !digitalRead(pinsCols_[c]));
+      }
+      digitalWrite(pinsRows_[r], HIGH);
+    }
+    return state;
+  }
+
+private:
+  inline void setState(int row, int col, bool value) {
+    byte *target = &state[(row * cols_ + col) >> 3];
+    int bit = col & 0x07;
+    if (value) {
+      *target |= 1 << bit;
+    } else {
+      *target &= ~(1 << bit);
+    }
+  }
+};
+
 class PushButton {
 private:
-  const int debounce_ = 50;
   int pin_;
-  unsigned long last_ = 0;
-  bool released_ = true;
 
 public:
   PushButton(int pin) : pin_(pin) {}
 
-  void begin() {
-    pinMode(pin_, INPUT_PULLUP);
-    last_ = millis();
-  }
+  void begin() { pinMode(pin_, INPUT_PULLUP); }
 
-  bool isPushed() {
-    unsigned long now = millis();
-    if (now - last_ < debounce_) {
-      return false;
-    }
-    last_ = now;
-
-    int state = digitalRead(pin_);
-    // No hold and repeat. The button is only considered pushed
-    // if it was released in the previous scan.
-    if (state == LOW && released_) {
-      released_ = false;
-      return true;
-    }
-    if (state == HIGH) {
-      released_ = true;
-    }
-    return false;
-  }
+  inline bool read() { return !digitalRead(pin_); }
 };
 
 class Joystick {
 private:
-  const int sensitivity = 5;
-  const int debounce_ = 50;
-
-  unsigned long last_ = 0;
   int pinHigh_;
   int pinX_;
   int pinY_;
 
-  uint8_t xPrev = 128;
-  uint8_t yPrev = 128;
+  uint8_t xPrev;
+  uint8_t yPrev;
 
 public:
   Joystick(int pinHigh, int pinX, int pinY)
@@ -71,38 +90,15 @@ public:
     pinMode(pinY_, INPUT);
 
     digitalWrite(pinHigh_, HIGH);
-    xPrev = analogRead(pinX_) >> 2;
-    yPrev = 255 - (analogRead(pinY_) >> 2); // Y axis is inverted.
+    read(xPrev, yPrev);
     digitalWrite(pinHigh_, LOW);
-
-    last_ = millis();
   }
 
-  // Read x and y positions. Return true if either has shifted enough from the
-  // last position.
-  bool read(uint8_t &x, uint8_t &y) {
-    unsigned long now = millis();
-    if (now - last_ < debounce_) {
-      return false;
-    }
-    last_ = now;
-
+  void read(uint8_t &x, uint8_t &y) {
     digitalWrite(pinHigh_, HIGH);
-    // analogRead has 10 bit accuracy. We use 8 bits.
-    x = analogRead(pinX_) >> 2;
-    y = 255 - (analogRead(pinY_) >> 2);
+    x = analogRead(pinX_) >> 6;
+    y = (1023 - analogRead(pinY_) >> 6);
     digitalWrite(pinHigh_, LOW);
-
-    int deltaX = abs(x - xPrev);
-    int deltaY = abs(y - yPrev);
-
-    if (deltaX >= sensitivity || deltaY >= sensitivity) {
-      xPrev = x;
-      yPrev = y;
-      return true;
-    } else {
-      return false;
-    }
   }
 };
 
@@ -110,63 +106,29 @@ class IrRemote {
 private:
   int pin_;
 
-  enum TYPE { KEY = 1, JOYSTICK1 = 2, JOYSTICK2 = 3 };
-
-  void Send(uint16_t type, uint16_t value) {
-    IrSender.sendNECRaw((uint32_t)type << 24 | value);
-    // A short delay seems to improve the signal quality.
-    delay(40);
-  }
-
 public:
   IrRemote(int pin) : pin_(pin) {}
 
-  begin() { IrSender.begin(pin_); }
+  void begin() { IrSender.begin(pin_); }
 
-  void SendKey(uint16_t key) {
-    DEBUG_OUTPUT("Key ");
-    DEBUG_OUTPUT(key);
-    DEBUG_OUTPUT('\n');
-    Send(TYPE::KEY, key);
-  }
-
-  void SendJoystick1(uint8_t x, uint8_t y) {
-    DEBUG_OUTPUT("Joystick 1: ");
-    DEBUG_OUTPUT(x);
-    DEBUG_OUTPUT(", ");
-    DEBUG_OUTPUT(y);
-    DEBUG_OUTPUT('\n');
-
-    Send(TYPE::JOYSTICK1, (uint16_t)x << 8 | y);
-  }
-
-  void SendJoystick2(uint8_t x, uint8_t y) {
-    DEBUG_OUTPUT("Joystick 2: ");
-    DEBUG_OUTPUT(x);
-    DEBUG_OUTPUT(", ");
-    DEBUG_OUTPUT(y);
-    DEBUG_OUTPUT('\n');
-
-    Send(TYPE::JOYSTICK2, (uint16_t)x << 8 | y);
+  void send(byte *buffer, int len) {
+    IrSender.sendPulseDistanceWidthFromArray(&NECProtocolConstants,
+                                             (IRRawDataType *)buffer, 40, 0);
   }
 };
 
 IrRemote remote(10);
 
-Joystick joystick1(A5, A2, A3);
+Joystick joystick1(A4, A2, A3);
 Joystick joystick2(A5, A6, A7);
 
 PushButton directButtons[] = {PushButton(A0), PushButton(A1)};
 
 constexpr int rows = 2;
 constexpr int cols = 8;
-byte buttonMatrix[rows][cols] = {{21, 22, 23, 24, 25, 26, 27, 28},
-                                 {31, 32, 33, 34, 35, 36, 37, 38}};
-byte pinsRows[rows] = {11, 12};
-byte pinsCols[cols] = {2, 3, 4, 5, 6, 7, 8, 9};
-
-Keypad keypad =
-    Keypad(makeKeymap(buttonMatrix), pinsRows, pinsCols, rows, cols);
+uint8_t pinsRows[rows] = {11, 12};
+uint8_t pinsCols[cols] = {2, 3, 4, 5, 6, 7, 8, 9};
+KeyMatrix matrix(rows, cols, pinsRows, pinsCols);
 
 void setup() {
 #ifdef NDEBUG
@@ -181,29 +143,67 @@ void setup() {
 
   joystick1.begin();
   joystick2.begin();
+  matrix.begin();
 }
 
 void loop() {
-  int key = keypad.getKey();
-  if (key != 0) {
-    remote.SendKey(key);
+  static unsigned long last = millis();
+  unsigned long now = millis();
+  // IR receiver needs about 100 ms to receive and process a frame.
+  if (now - last < 110) {
     return;
   }
+  last = now;
 
+  /*
+  Bytes 0-1: left and right joysticks
+  y3 y2 y1 y0 x3 x2 x1 x0
+  Bytes 2-3: matrix buttons
+  Byte 4: other buttons
+  */
+  static byte prevData[5];
+
+  byte data[5];
+  uint8_t x, y;
+  joystick1.read(x, y);
+  data[0] = x | (y << 4);
+  joystick2.read(x, y);
+  data[1] = x | (y << 4);
+
+  byte *b = matrix.read();
+  data[2] = b[0];
+  data[3] = b[1];
+
+  data[4] = 0;
   for (int i = 0; i < sizeof(directButtons) / sizeof(PushButton); i++) {
-    if (directButtons[i].isPushed()) {
-      remote.SendKey(i + 1);
-      return;
+    if (directButtons[i].read()) {
+      data[4] |= 1 << i;
+    } else {
+      data[4] &= ~(1 << i);
     }
   }
 
-  uint8_t x, y;
-  if (joystick1.read(x, y)) {
-    remote.SendJoystick1(x, y);
-    return;
+  // Update prevData and determine if the new data is different
+  byte changed = false;
+  for (int i = 0; i < 5; i++) {
+    changed |= data[i] ^ prevData[i];
+    prevData[i] = data[i];
   }
-  if (joystick2.read(x, y)) {
-    remote.SendJoystick2(x, y);
-    return;
+
+  // If the state hasn't changed since last send, we use a exponential backoff
+  // strategy for resending the same state.
+  static unsigned long interval = 2;
+  if (changed) {
+    interval = 2;
+    remote.send(data, sizeof(data) / sizeof(byte));
+  } else {
+    static unsigned long lastUnchanged = millis();
+
+    if (now - lastUnchanged >= interval) {
+      Serial.println("sending (unchanged)");
+      remote.send(data, sizeof(data) / sizeof(byte));
+      lastUnchanged = now;
+      interval = interval * 1.5;
+    }
   }
 }
