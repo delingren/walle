@@ -41,17 +41,14 @@ The rest of the documentation is organized as follows.
   - [Microcontroller](mcu.md)
   - [Controlling arms](arm.md)
   - [Rotating the head](head_rotation.md)
-  - [Driving motors with H-bridges](hbridge.md)
-  - [Driving one-direction motors](motor.md)
+  - [Driving the treads](drivetrain.md)
+  - [Driving the eye tilter](eyetilt.md)
   - [Audio](audio.md)
-  - [IR remote receiver](remote_receiver.md)
-
+  - [Remote receiver](remote_receiver.md)
+* [Remote Control](remote_control.md)
+* [RC protocol](remote_protocol.md)
 * [Integration](integration.md)
-
-* [Custom Remote Control](remote_transmitter.md)
-
 * [Firmware](firmware.md)
-
 * Schematics
   - [Main unit](./schematics/main.svg)
   - [Remote control](./schematics/remote.svg)

@@ -53,37 +53,11 @@ And voila! A couple of caveats to mention:
 
 ## DY-SV17F
 
-I also found an even cheaper alternative: DY-SV17F which has 4MB internal flash and an 5W amp. It has some [official documentation](https://github.com/smoluks/DY-SV17F) but no official Arduino library. I found a third party [library](https://github.com/SnijderC/dyplayer) and decided to give it a try with the following [sketch](./dy_sv17f_loop/), similar to the previous one.
-
-```
-#include <Arduino.h>
-#include "src/DYPlayerArduino.h"
-
-DY::Player player(&Serial1);
-
-int file_count = 10;
-void setup() {
-  player.begin();
-  delay(200);
-  player.setVolume(15);
-}
-
-void loop() {
-  static int index = 1;
-  DY::play_state_t state = player.checkPlayState();
-  if (state == DY::play_state_t::Stopped) {
-    player.playSpecified(index);
-    index++;
-    if (index > file_count) {
-      index = 1;
-    }
-  }
-  delay(500);
-}
-```
+I also found an even cheaper alternative: DY-SV17F which has 4MB internal flash and an 5W amp. It has some [official documentation](https://github.com/smoluks/DY-SV17F) but no official Arduino library. I found a third party [library](https://github.com/SnijderC/dyplayer) and decided to give it a try with the following [sketch](./debug/dy_sv17f_loop/), similar to the previous one.
 
 It seems to work fine. So I may go with this one for its low cost and simplicity, since it requires no SD card. A few things worth mentioning:
 
-1. It requires three 10K Ohm resistors to configure it as UART mode.
+1. The datasheet states that it requires three 10K Ohm resistors to configure it as UART mode. However, in practice, shorting those pins works just fine.
 1. It comes with a micro USB port for accessing its filesystem on the flash. It might be an isolated incident but when I copied files from a Mac, the file system was somehow corrupted. I later formatted it and copied the same files from a Windows box and everything was fine.
-1. The file names need to be in the format of `ddddd.mp3` where `d` is a digit.
+1. According to the datasheet, the file names need to be in the format of `ddddd.mp3` where `d` is a digit. 
+1. Despite conforming to the file name convention, the numbering didn't seem to work in v2. Later I figured out that it actually goes by the order the files are copied, not the names. So I made sure to copy one file at a time and it worked fine.

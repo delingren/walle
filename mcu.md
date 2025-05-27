@@ -6,7 +6,7 @@ We need to choose a microcontroller. I am not going to make a custom PCB for thi
 1. Dimension. We want the board to be compact.
 1. Power. Ideally, I want to be able to power the board with 4 AA batteries, so that I don't need an extra 5V DC regulator.
 
-Here's a tally of all the pins.
+Here's a tally of the minimum pin needs. These pins will be explained in detail in later sections.
 
 * PWM output: 7 pins
   - Left tread H bridge (1)
@@ -28,7 +28,7 @@ Here's a tally of all the pins.
   - IR sensor
   - Push button
 
-* UART for audio: 2 pins. Not all pins can be used for UART.
+* UART for audio: 2 pins. Note that not all pins can be used for UART.
   - Rx
   - Tx
 

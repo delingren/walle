@@ -15,11 +15,11 @@ I managed to solder everything in the lower part onto a 50mmx70mm perf board. It
 * Speaker
 * Connectors for the upper part
 
-![lower_pcb](./media/IMG_0357.jpeg)
+![lower_pcb](./media/IMG_1171.jpeg)
 
 The PCB is then mounted to the chassis using a 3D printed mount.
 
-![mounted_pcb](./media/IMG_0828.jpeg)
+![mounted_pcb](./media/IMG_0376.jpeg)
 
 Now the upper part. I want to have a neat interface between the upper part and the lower part for easy assembly. So I use a small PCB as a hub and plug everything in the lower part into its pin headers. The PCB has a power bus connected to the switched power source. Then I use a flat ribbon cable to connect all the logic signals. The two IR receivers' signals are combined on the PCB and fed to the MCU via one pin. The MOSFET for the eye tilter motor is also integrated to the PCB. Here are the connections.
 
@@ -68,9 +68,8 @@ To interact with the MCU after everything is mounted and connected, I made a USB
 
 ![lower](./media/IMG_0873.mov)
 
-Finally, before closing it up, I am exposing a USB-C port for uploading sketches and debugging through the serial port. To do this, I cut a hole at the bottom of the chassis, and mounted a panel-mount USB-C port (bought from AliExpress). Then soldered a male USB-C plug on it. Note that I am not connecting the V+ wire, to avoid accidental current backflow to the computer. So it needs to be powered by the batteries when uploading the sketch.
+Before closing everything up, I am also exposing a USB-C port for uploading sketches and debugging through the serial port. To do this, I cut a hole at the bottom of the chassis, and mounted a panel-mount USB-C port (bought from AliExpress). Then soldered a male USB-C plug on it. Note that I am not connecting the V+ wire, to avoid accidental current backflow to the computer. So it needs to be powered by the batteries when uploading the sketch.
 
 ![bottom_usb](./media/IMG_0888.jpeg)
-![top_usb](./media/IMG_0887.jpeg)
 
 Now all the mechanical parts are in placed and properly assembled. It's time to play with the firmware.
