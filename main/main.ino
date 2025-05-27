@@ -341,14 +341,14 @@ public:
       return false;
     }
     last_ = now;
-    int state = digitalRead(pin_);
+    int bitmap = digitalRead(pin_);
     // No hold and repeat. The button is only considered pushed
     // if it was released in the previous scan.
-    if (state == LOW && released_) {
+    if (bitmap == LOW && released_) {
       released_ = false;
       return true;
     }
-    if (state == HIGH) {
+    if (bitmap == HIGH) {
       released_ = true;
     }
     return false;
