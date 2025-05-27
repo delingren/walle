@@ -16,6 +16,7 @@
     "string": "cpp",
     "string_view": "cpp",
     "cstddef": "cpp",
-    "locale": "cpp"
+    "locale": "cpp",
+    "new": "cpp"
   }
 }
