@@ -11,9 +11,6 @@ int in2B = 10;
 int speed = 255;
 
 void setup() {
-
-  // Set all the motor control pins to outputs
-
   pinMode(pwmA, OUTPUT);
   pinMode(pwmB, OUTPUT);
   pinMode(in1A, OUTPUT);
@@ -22,29 +19,80 @@ void setup() {
   pinMode(in2B, OUTPUT);
 
   Serial.begin(115200);
+  delay(1500);
 }
 
 void loop() {
-
-  // Set Motor A forward
-
+  // Forward
   digitalWrite(in1A, HIGH);
   digitalWrite(in2A, LOW);
+  digitalWrite(in1B, HIGH);
+  digitalWrite(in2B, LOW);
+  // Full speed
+  analogWrite(pwmA, 255);
+  analogWrite(pwmB, 255);
+  delay(1500);
+  // Half speed
+  analogWrite(pwmA, 192);
+  analogWrite(pwmB, 192);
+  delay(1500);
+  // Stop
+  analogWrite(pwmA, 0);
+  analogWrite(pwmB, 0);
+  delay(1500);
 
-  // Set Motor B backward
+  // Left spin
+  digitalWrite(in1A, LOW);
+  digitalWrite(in2A, HIGH);
+  digitalWrite(in1B, HIGH);
+  digitalWrite(in2B, LOW);
+  // Full speed
+  analogWrite(pwmA, 255);
+  analogWrite(pwmB, 255);
+  delay(1500);
+  // Half speed
+  analogWrite(pwmA, 192);
+  analogWrite(pwmB, 192);
+  delay(1500);
+  // Stop
+  analogWrite(pwmA, 0);
+  analogWrite(pwmB, 0);
+  delay(1500);
 
+  // Right spin
+  digitalWrite(in1A, HIGH);
+  digitalWrite(in2A, LOW);
   digitalWrite(in1B, LOW);
   digitalWrite(in2B, HIGH);
+  // Full speed
+  analogWrite(pwmA, 255);
+  analogWrite(pwmB, 255);
+  delay(1500);
+  // Half speed
+  analogWrite(pwmA, 192);
+  analogWrite(pwmB, 192);
+  delay(1500);
+  // Stop
+  analogWrite(pwmA, 0);
+  analogWrite(pwmB, 0);
+  delay(1500);
 
-  analogWrite(pwmA, speed);
-  analogWrite(pwmB, speed);
+  // Backward
+  digitalWrite(in1A, LOW);
+  digitalWrite(in2A, HIGH);
+  digitalWrite(in1B, LOW);
+  digitalWrite(in2B, HIGH);
+  // Full speed
+  analogWrite(pwmA, 255);
+  analogWrite(pwmB, 255);
+  delay(1500);
+  // Half speed
+  analogWrite(pwmA, 192);
+  analogWrite(pwmB, 192);
+  delay(1500);
 
-  Serial.println(speed);
-
-  speed -= 50;
-
-  if (speed <= 105) {
-    speed = 255;
-  }
-  delay(3000);
+  // Stop
+  analogWrite(pwmA, 0);
+  analogWrite(pwmB, 0);
+  delay(1500);
 }

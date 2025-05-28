@@ -64,9 +64,7 @@ For the lower part:
 
 1. Verify both DC motors can turn both directions and the speed can be controlled with PWM pins
 
-To interact with the MCU after everything is mounted and connected, I made a USB-C cable without the +5V wire. This way, I can power everything with an external power source instead of the computer's USB hub. Instead of connecting the power input to the battery case, I leave the battery case disassembled and power it with a bench power. This way, I can leave the back open for easier debugging.
-
-![lower](./media/IMG_0873.mov)
+![lower](./media/IMG_1213.mov)
 
 Before closing everything up, I am also exposing a USB-C port for uploading sketches and debugging through the serial port. To do this, I cut a hole at the bottom of the chassis, and mounted a panel-mount USB-C port (bought from AliExpress). Then soldered a male USB-C plug on it. Note that I am not connecting the V+ wire, to avoid accidental current backflow to the computer. So it needs to be powered by the batteries when uploading the sketch.
 
