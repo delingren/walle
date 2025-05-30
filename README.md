@@ -55,7 +55,7 @@ The rest of the documentation is organized as follows.
 
 * 3D models
   - [Fusion 360 file](./wall-e.f3d)
-  - [STL files](./stl/)
+  - [STL files](./stls/)
 
 ## Demo
 
