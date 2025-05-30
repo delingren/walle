@@ -1,6 +1,6 @@
 # Driving one-direction motors
 
-The eye tilt is controlled with a single shaft rotating either direction. The shaft is directly connected to a N10 DC motor. There's no need for an H-bridge since we only need one direction. Instead, we need be able to turn it on and off with a MOSFET. We could use a PWM pin to control the speed but that's really unnecessary. We only need one speed.
+The eye tilt is controlled with a single shaft rotating either direction. The shaft is directly connected to an N10 DC motor. There's no need for an H-bridge since we only need one direction. Instead, we need be able to turn it on and off with a MOSFET. We could use a PWM pin to control the speed but that's really unnecessary. We only need one speed.
 
 ![eye tilt shaft](./media/IMG_0795.jpeg)
 
