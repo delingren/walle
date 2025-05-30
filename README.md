@@ -54,7 +54,7 @@ The rest of the documentation is organized as follows.
   - [Remote control](./schematics/remote.svg)
 
 * 3D models
-  - [Fusion 360 file](./wall-e.f3d)
+  - [Fusion 360 file](./walle_3.0.f3d)
   - [STL files](./stls/)
 
 ## Demo
