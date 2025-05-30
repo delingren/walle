@@ -12,10 +12,10 @@ void loop() {
     uint64_t code = IrReceiver.decodedIRData.decodedRawData;
     decode_type_t protocol = IrReceiver.decodedIRData.protocol;
 
-    // Serial.print("Protocol: ");
-    // Serial.print(protocol);
-    // Serial.print(" Raw Code: 0x");
-    // Serial.println(code, HEX);
+    Serial.print("Protocol: ");
+    Serial.print(protocol);
+    Serial.print(" Raw Code: ");
+    Serial.println(code);
 
     if (protocol == PULSE_DISTANCE) {
       byte *p = (byte *)(&code);

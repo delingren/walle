@@ -7,6 +7,7 @@
 
 #include "src/DYPlayerArduino.h"
 #define DECODE_NEC // Decodes NEC, NEC2, and ONKYO
+#define DECODE_DISTANCE_WIDTH
 #include "src/IRremote.hpp"
 
 #ifdef NDEBUG
@@ -76,10 +77,10 @@ enum AnimationType {
 struct Animation {
   AnimationType type;
   union {
-    unsigned long millisDuration;
-    float speed; // fraction per millisecond
+    unsigned long millisDuration; // milliseconds
+    float speed;                  // fraction per millisecond
   };
-  float value;
+  float value; // target or incremental
 
   // to: absolute target value
   // by: incremental value
@@ -126,49 +127,6 @@ public:
     }
   }
 
-  virtual void setValue(float value) { value_ = value; }
-  float getValue() { return value_; }
-
-  void queueAnimation(Animation animation) {
-    if (animationQueue.empty()) {
-      millisStart = millis();
-      valueStart = value_;
-    }
-
-    if (animation.type == AnimationType::LinearByOver ||
-        animation.type == AnimationType::LinearByAt) {
-      // Calculate the target value based on the current value and the
-      // increment.
-      constexpr float epsilon = 0.05;
-      float valueCurrent = getValue();
-      float valueTarget = clamp(valueCurrent + animation.value, 0.0f, 1.0f);
-      if (std::abs(valueCurrent - valueTarget) <= epsilon) {
-        return;
-      }
-      animation.value = valueTarget;
-    }
-
-    if (animation.type == AnimationType::LinearToAt ||
-        animation.type == AnimationType::LinearByAt) {
-      // Calculate the duration based on the speed and the increment.
-      float valueCurrent = getValue();
-
-      unsigned long duration =
-          std::abs(animation.value - valueCurrent) / animation.speed;
-
-      animation.millisDuration = duration;
-    }
-
-    animationQueue.push(animation);
-  }
-
-  template <size_t N>
-  void queueAnimations(const std::array<Animation, N> animations) {
-    for (auto animation : animations) {
-      queueAnimation(animation);
-    }
-  }
-
 protected:
   static std::vector<Animatable *> animatables;
 
@@ -179,6 +137,31 @@ protected:
 
   Animatable() { animatables.push_back(this); }
 
+  virtual void setValue(float value) { value_ = value; }
+  float getValue() { return value_; }
+
+public:
+  void queueAnimation(Animation animation) {
+    animationQueue.push(animation);
+    if (animationQueue.size() == 1) {
+      transitionToNextAnimation(millis());
+    }
+  }
+
+  template <size_t N>
+  void queueAnimations(const std::array<Animation, N> animations) {
+    for (auto animation : animations) {
+      queueAnimation(animation);
+    }
+  }
+
+  void cancelAll() {
+    while (!animationQueue.empty()) {
+      animationQueue.pop();
+    }
+  }
+
+protected:
   void transitionToNextAnimation(unsigned long millisNow) {
     if (animationQueue.empty()) {
       millisStart = 0;
@@ -186,6 +169,46 @@ protected:
     }
     millisStart = millisNow;
     valueStart = value_;
+
+    Serial.println("Next animation...");
+    Animation &animation = animationQueue.front();
+    if (animation.type == AnimationType::LinearByOver ||
+        animation.type == AnimationType::LinearByAt) {
+      // Calculate the target value based on the current value and the
+      // increment.
+
+      constexpr float epsilon = 0.05;
+      float valueCurrent = getValue();
+
+      float valueTarget = clamp(valueCurrent + animation.value, 0.0f, 1.0f);
+      if (std::abs(valueCurrent - valueTarget) <= epsilon) {
+        animationQueue.pop();
+        transitionToNextAnimation(millisNow);
+        return;
+      }
+      animation.value = valueTarget;
+
+      Serial.print(" current: ");
+      Serial.print(valueCurrent);
+      Serial.print(" target: ");
+      Serial.print(valueTarget);
+    }
+
+    if (animation.type == AnimationType::LinearToAt ||
+        animation.type == AnimationType::LinearByAt) {
+      // Calculate the duration based on the speed and the increment.
+      float valueCurrent = getValue();
+
+      // animation.value is already target value, rather than the increment.
+      unsigned long duration =
+          std::abs(animation.value - valueCurrent) / animation.speed;
+
+      animation.millisDuration = duration;
+      Serial.print(" duration: ");
+      Serial.print(duration);
+    }
+
+    Serial.println();
   }
 
   void updateFrame(unsigned long millisNow) {
@@ -205,6 +228,7 @@ protected:
       float fraction = static_cast<float>(millisNow - millisStart) /
                        static_cast<float>(animation.millisDuration);
       if (fraction >= 1.0) {
+        Serial.println(" done.");
         setValue(animation.value);
         animationQueue.pop();
         transitionToNextAnimation(millisNow);
@@ -212,7 +236,14 @@ protected:
         float valueNext =
             (1.0 - fraction) * valueStart + fraction * animation.value;
         setValue(valueNext);
+
+        Serial.print("fraction: ");
+        Serial.print(fraction);
+        Serial.print(" value: ");
+        Serial.print(valueNext);
+        Serial.println();
       }
+
       break;
     }
 
@@ -528,14 +559,6 @@ void backwardRight() {
   rightTread.queueAnimation(Animation::toOver(0, 200));
 }
 
-void leftArmMove(float value) {
-  leftArm.queueAnimation(Animation::byAt(value, 0.001f));
-}
-
-void rightArmMove(float value) {
-  rightArm.queueAnimation(Animation::byAt(value, 0.001f));
-}
-
 void leftArmUp() { leftArm.queueAnimation(Animation::toAt(1, 0.001f)); }
 
 void leftArmDown() { leftArm.queueAnimation(Animation::toAt(0, 0.001f)); }
@@ -676,7 +699,7 @@ void loop() {
   if (IrReceiver.decode()) {
     resetIdleCount();
 
-    uint32_t code = IrReceiver.decodedIRData.decodedRawData;
+    uint64_t code = IrReceiver.decodedIRData.decodedRawData;
     decode_type_t protocol = IrReceiver.decodedIRData.protocol;
 
     IrReceiver.resume();
@@ -768,144 +791,101 @@ void loop() {
       }
     }
 
-    // My custom remote control. The library sometimes reports NEC2, sometimes
-    // ONKYO. They are probably distinguishable from the raw code. I'll just
-    // include them both.
-    if (protocol == NEC2 || protocol == ONKYO) {
-      uint16_t type = (code & 0xFF000000) >> 24;
-      uint16_t value = (code & 0x0000FFFF);
-
-      switch (type) {
-      case 2: { // Left joystick
-        uint8_t xRaw = (value & 0xFF00) >> 8;
-        uint8_t yRaw = (value & 0x00FF) >> 0;
-
-        // Normalize x and y values. Range: [-1,1]
-        float xNormalized = (xRaw - 127.5) / 127.5;
-        float yNormalized = (yRaw - 127.5) / 127.5;
-
-        float xSign = xNormalized >= 0 ? 1 : -1;
-        float ySign = yNormalized >= 0 ? 1 : -1;
-
-        float left, right;
-        if (xSign == ySign) {
-          right = ySign * max(abs(xNormalized), abs(yNormalized));
-          left = ySign * (abs(yNormalized) - abs(xNormalized));
-        } else {
-          left = ySign * max(abs(xNormalized), abs(yNormalized));
-          right = ySign * (abs(yNormalized) - abs(xNormalized));
-        }
-        leftTread.setValue(left);
-        rightTread.setValue(right);
-        break;
+    // Custom remote control
+    if (protocol == PULSE_DISTANCE) {
+      byte *p = (byte *)(&code);
+      byte correction = 0;
+      for (int i = 0; i < 6; i++) {
+        correction ^= p[i];
       }
+      if (correction == 0) {
+        static uint64_t prevCode = 0x000000008888; // The neutral state
 
-      case 3: { // Right joystick
-        // Range with which a normalized x value is considered "center"
-        const float thresholdLeft = -0.5;
-        const float thresholdRight = 0.5;
+        int8_t x1, y1;
+        int8_t x2, y2;
+        decodeJoystick(p[0], x1, y1);
+        decodeJoystick(p[1], x2, y2);
 
-        // Timestamp of last arm movement, to avoid moving arms too fast.
-        static unsigned long millisLastArmMove = 0;
-        unsigned long millisNow = millis();
-        if (millisNow - millisLastArmMove < 500) {
-          break;
+        // if any of the button bits (16 - 40) has changed
+        if ((code ^ prevCode) & 0xFFFFFF0000) {
+          for (int i = 16; i < 40; i++) {
+            bool curr = (code >> i) & 1;
+            bool prev = (prevCode >> i) & 1;
+
+            if (!curr && prev) {
+              Serial.print("Button ");
+              Serial.print(i - 16);
+              Serial.println(" released.");
+            }
+
+            if (curr && !prev) {
+              Serial.print("Button ");
+              Serial.print(i - 16);
+              Serial.println(" pressed.");
+            }
+          }
         }
 
-        // Joy stick positions. Range: [0,255]
-        uint8_t xRaw = (value & 0xFF00) >> 8;
-        uint8_t yRaw = (value & 0x00FF) >> 0;
+        // if joystick 1 changed
+        if ((code ^ prevCode) & 0x00000000FF) {
+          // Normalize x and y values. Range: [-1,1]
+          float xNormalized = x1 / 7.0;
+          float yNormalized = y1 / 7.0;
 
-        // Normalize x and y values. Range: [-1,1]
-        float xNormalized = (xRaw - 127.5) / 127.5;
-        float yNormalized = (yRaw - 127.5) / 127.5;
+          float xSign = xNormalized >= 0 ? 1 : -1;
+          float ySign = yNormalized >= 0 ? 1 : -1;
 
-        bool moveLeft = xNormalized <= thresholdRight;
-        bool moveRight = xNormalized >= thresholdLeft;
-
-        // Calculate the amount to move: nothing, a little, or a lot.
-        float ySign = yNormalized >= 0 ? 1 : -1;
-        float yAbsolute = abs(yNormalized);
-        float moveAmount;
-        if (yAbsolute > 0.95) {
-          moveAmount = 0.2 * ySign;
-        } else if (yAbsolute > 0.1) {
-          moveAmount = 0.1 * ySign;
-        } else {
-          moveAmount = 0;
+          float left, right;
+          if (xSign == ySign) {
+            right = ySign * max(abs(xNormalized), abs(yNormalized));
+            left = ySign * (abs(yNormalized) - abs(xNormalized));
+          } else {
+            left = ySign * max(abs(xNormalized), abs(yNormalized));
+            right = ySign * (abs(yNormalized) - abs(xNormalized));
+          }
+          leftTread.setValue(left);
+          rightTread.setValue(right);
         }
 
-        if (moveAmount != 0 && moveLeft) {
-          leftArmMove(moveAmount);
-          millisLastArmMove = millisNow;
-        }
-        if (moveAmount != 0 && moveRight) {
-          rightArmMove(moveAmount);
-          millisLastArmMove = millisNow;
+        // Joystick 2 is not in the neutral position
+        if (y2 != 0) {
+          static unsigned long last = millis();
+
+          // Range with which a normalized x value is considered "center"
+          const float thresholdLeft = -0.5;
+          const float thresholdRight = 0.5;
+
+          // Normalize x and y values. Range: [-1,1]
+          float xNormalized = x2 / 7.0;
+          float yNormalized = y2 / 7.0;
+
+          bool moveLeft = xNormalized <= thresholdRight;
+          bool moveRight = xNormalized >= thresholdLeft;
+
+          // Calculate the speed to move: fast, slow, or still
+          float ySign = yNormalized >= 0 ? 1 : -1;
+          float yAbsolute = abs(yNormalized);
+          float speed;
+          if (yAbsolute > 0.85) {
+            speed = 0.0003;
+          } else if (yAbsolute > 0.25) {
+            speed = 0.00015;
+          } else {
+            speed = 0;
+          }
+
+          if (moveLeft && speed != 0) {
+            leftArm.queueAnimation(Animation::byAt(0.1 * ySign, speed));
+          }
+
+          if (moveRight && speed != 0) {
+            rightArm.queueAnimation(Animation::byAt(0.1 * ySign, speed));
+          }
         }
 
-        break;
-      }
-      case 1: {
-        // Button push
-        uint16_t key = value;
-        switch (key) {
-        case 23: // L1
-          leftArmMove(0.1);
-          break;
-        case 24: // L2
-          leftArmMove(-0.1);
-          break;
-        case 21: // R1
-          rightArmMove(0.1);
-          break;
-        case 22: // R2
-          rightArmMove(-0.1);
-          break;
-        case 25: // Select
-          setIdle();
-          break;
-        case 26: // Mode
-          demo();
-          break;
-        case 28: // Start
-          playNextAudio();
-          break;
-        case 38: // Left
-          rotateHeadBy(-0.1);
-          break;
-        case 37: // Right
-          rotateHeadBy(0.1);
-          break;
-        case 36: // Up
-          lookStraight();
-          break;
-        case 35: // Down
-          tiltEye();
-          break;
-        case 32: // X
-          spinLeft();
-          break;
-        case 34: // Y
-          forward();
-          break;
-        case 31: // A
-          backward();
-          break;
-        case 33: // B
-          spinRight();
-          break;
-        case 1: // Joystick 1
-          stop();
-          break;
-        case 2: // Joystick 2
-          lookAround();
-          break;
-        default:
-          break;
-        }
-        break;
-      }
+        prevCode = code;
+      } else {
+        Serial.println("Error detected");
       }
     }
   }
@@ -924,5 +904,19 @@ void loop() {
 
     leftEye.setValue(breathingPhase);
     rightEye.setValue(breathingPhase);
+  }
+}
+
+void decodeJoystick(byte code, int8_t &x, int8_t &y) {
+  if (code & 0x08) {
+    x = -(code & 0x07);
+  } else {
+    x = code & 0x07;
+  }
+
+  if (code & 0x80) {
+    y = -((code & 0x70) >> 4);
+  } else {
+    y = (code & 0x70) >> 4;
   }
 }
