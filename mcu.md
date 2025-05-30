@@ -41,33 +41,4 @@ I have a few [RP2040-Zero dev boards](https://www.waveshare.com/rp2040-zero.htm)
 
 It seems to fit the bill really well. So I'll be using it during the prototyping phase and see if it works for everything.
 
-First off, let's verify that all the GPIO pins are PWM capable by using a simple sketch to dim LEDs.
-
-```
-int pins[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 26, 27, 28, 29};
-
-void setup() {
-  for (int i = 0; i < sizeof(pins) / sizeof(pins[0]); i ++) {
-    pinMode(pins[i], OUTPUT);
-  }
-}
-
-void loop() {
-  static int brightness = 0;
-  static int fadeAmount = 5;
-  
-  for (int i = 0; i < sizeof(pins) / sizeof(pins[0]); i ++) {
-    analogWrite(pins[i], brightness);
-  }
-
-  brightness += fadeAmount;
-
-  if (brightness <= 0 || brightness >= 255) {
-    fadeAmount = -fadeAmount;
-  }
-
-  delay(30);
-}
-```
-
-Sure enough, all these 20 pins are able to fade the LED. This takes care of the eyes. These pins should be good for controlling motors and servos as well. But let's verify on a breadboard.
+First off, let's verify that all the GPIO pins are PWM capable by using a simple [sketch](./debug/pwm/) to dim LEDs. Sure enough, all these 20 pins are able to fade the LED. This takes care of the eyes. These pins should be good for controlling motors and servos as well. But let's verify on a breadboard in a minute.
