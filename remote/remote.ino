@@ -181,18 +181,14 @@ void loop() {
     }
   }
 
-  // Calculate xor
-  data[5] = 0;
-  for (int i = 0; i < 5; i++) {
-    data[5] ^= data[i];
-  }
+  data[5] = data[0] ^ data[1] ^ data[2] ^ data[3] ^ data[4] ^ data[5];
 
   // If the state hasn't been remaining neutral, we use an exponential
   // backoff strategy for resending the same neutral state.
-  byte remainsNeutral = data[0] == 0x88 && data[1] == 0x88 && data[2] == 0 &&
-                        data[3] == 0 && data[4] == 0;
   static unsigned long interval = 2;
-  if (!remainsNeutral) {
+  byte neutral = data[0] == 0x88 && data[1] == 0x88 && data[2] == 0 &&
+                 data[3] == 0 && data[4] == 0;
+  if (!neutral) {
     interval = 2;
     remote.send(data, sizeof(data) / sizeof(byte));
   } else {

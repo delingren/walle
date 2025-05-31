@@ -41,16 +41,16 @@ I have no use for the components except the two LEDs and their resistors. So let
 
 And the pins for the rows and columns:  
 ```
-row 1: pad 06  
-row 2: pad 07  
-col 1: pad 04  
-col 2: pad 09  
-col 3: pad 10  
-col 4: pad 11  
-col 5: pad 13  
-col 6: pad 14  
-col 7: pad 15  
-col 8: pad 16  
+row 1: pad 06  (GPIO11)
+row 2: pad 07  (GPIO12)
+col 1: pad 04  (GPIO02)
+col 2: pad 09  (GPIO03)
+col 3: pad 10  (GPIO04)
+col 4: pad 11  (GPIO05)
+col 5: pad 13  (GPIO06)
+col 6: pad 14  (GPIO07)
+col 7: pad 15  (GPIO08)
+col 8: pad 16  (GPIO09)
 ```
 
 ![pcb1](./media/IMG_0927.jpeg)
@@ -59,7 +59,7 @@ We will need these outgoing wires:
 * to PCB2: `BAT-`, `GND`
 * to MCU: `BAT+`, `GND`, `Rows 1-2`, `Cols 1-8`, `LED2`
 
-I did bridged a couple of pads on the PCB so that all wires except `BAT+` can go out from the holes in the center.
+I bridged a couple of pads on the PCB so that all wires except `BAT+` can go out from the pads in the center.
 
 PCB2 contains:
 * Joystick 1, with axes `X1`, `Y1`, and button `J1`
