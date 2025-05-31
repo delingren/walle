@@ -1,6 +1,6 @@
 #define NO_LED_FEEDBACK_CODE
 #define DECODE_NEC
-#include <IRremote.hpp>
+#include "src/IRremote.hpp"
 
 #define NDEBUG 1
 // #undef NDEBUG
@@ -26,22 +26,22 @@ public:
   }
 
   void begin() {
-    for (int r = 0; r < rows_; r++) {
-      pinMode(pinsRows_[r], OUTPUT);
-      digitalWrite(pinsRows_[r], HIGH);
-    }
     for (int c = 0; c < cols_; c++) {
-      pinMode(pinsCols_[c], INPUT_PULLUP);
+      pinMode(pinsCols_[c], OUTPUT);
+      digitalWrite(pinsCols_[c], HIGH);
+    }
+    for (int r = 0; r < rows_; r++) {
+      pinMode(pinsRows_[r], INPUT_PULLUP);
     }
   }
 
   byte *read() {
-    for (int r = 0; r < rows_; r++) {
-      digitalWrite(pinsRows_[r], LOW);
-      for (int c = 0; c < cols_; c++) {
-        set(r, c, !digitalRead(pinsCols_[c]));
+    for (int c = 0; c < cols_; c++) {
+      digitalWrite(pinsCols_[c], LOW);
+      for (int r = 0; r < rows_; r++) {
+        set(r, c, !digitalRead(pinsRows_[r]));
       }
-      digitalWrite(pinsRows_[r], HIGH);
+      digitalWrite(pinsCols_[c], HIGH);
     }
     return bitmap;
   }
@@ -94,8 +94,8 @@ public:
     float x = round(analogRead(pinX_) * (7.0 / 512.0) - 7.0);
     float y = round(7.0 - analogRead(pinY_) * (7.0 / 512.0));
 
-    // IrSender doesn't like it when all bits are zero. So we use the non-canonical representation of 0 
-    // b1000 to avoid all zero bits
+    // IrSender doesn't like it when all bits are zero. So we use the
+    // non-canonical representation of 0 b1000 to avoid all zero bits
     digitalWrite(pinHigh_, LOW);
     byte result = 0;
     result |= x <= 0 ? 0x08 : 0x00;
@@ -159,14 +159,11 @@ void loop() {
   }
   last = now;
 
-  static byte prevData[5];
-  /*
-  Bytes 0-1: left and right joysticks
-  y3 y2 y1 y0 x3 x2 x1 x0
-  Bytes 2-3: matrix buttons
-  Byte 4: other buttons
-  Byte 5: xor of other bytes
-  */
+  // Bytes 0-1: left and right joysticks
+  // y3 y2 y1 y0 x3 x2 x1 x0
+  // Bytes 2-3: matrix buttons
+  // Byte 4: other buttons
+  // Byte 5: xor of other bytes
   byte data[6];
   data[0] = joystick1.read();
   data[1] = joystick2.read();
@@ -184,26 +181,25 @@ void loop() {
     }
   }
 
-  // Calculate xor, update prevData and determine if the new data is different
+  // Calculate xor
   data[5] = 0;
-  byte changed = false;
   for (int i = 0; i < 5; i++) {
     data[5] ^= data[i];
-    changed |= data[i] ^ prevData[i];
-    prevData[i] = data[i];
   }
 
-  // If the state hasn't changed since the last send, we use a exponential
-  // backoff strategy for resending the same state.
+  // If the state hasn't been remaining neutral, we use an exponential
+  // backoff strategy for resending the same neutral state.
+  byte remainsNeutral = data[0] == 0x88 && data[1] == 0x88 && data[2] == 0 &&
+                        data[3] == 0 && data[4] == 0;
   static unsigned long interval = 2;
-  if (changed) {
+  if (!remainsNeutral) {
     interval = 2;
     remote.send(data, sizeof(data) / sizeof(byte));
   } else {
-    static unsigned long lastUnchanged = millis();
-    if (now - lastUnchanged >= interval) {
+    static unsigned long last = millis();
+    if (now - last >= interval) {
       remote.send(data, sizeof(data) / sizeof(byte));
-      lastUnchanged = now;
+      last = now;
       interval = interval * 1.5;
     }
   }

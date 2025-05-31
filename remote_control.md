@@ -32,7 +32,7 @@ PCB1 contains:
 * Middle section: `Select`, `Mode`, `Start`
 * A main IC, a transmission IC, and some passive components
 
-I have no use for the components. So let's heat up the PCB with a heat gun and remove everything. I suspected all those buttons would be connected to the main IC in some way, forming a matrix. So I traced the PCB traces and determined the following connections.
+I have no use for the components except the two LEDs and their resistors. So let's heat up the PCB with a heat gun and remove them. I suspected all those buttons would be connected to the main IC in some way, forming a matrix. So I traced the PCB traces and determined the following connections.
 
 |           | col 1 | col 2 | col 3 | col 4 | col 5 | col 6 | col 7 | col 8 |
 |-----------|-------|-------|-------|-------|-------|-------|-------|-------|
@@ -41,23 +41,23 @@ I have no use for the components. So let's heat up the PCB with a heat gun and r
 
 And the pins for the rows and columns:  
 ```
-row 1: pin06  
-row 2: pin07  
-col 1: pin04  
-col 2: pin09  
-col 3: pin10  
-col 4: pin11  
-col 5: pin13  
-col 6: pin14  
-col 7: pin15  
-col 8: pin16  
+row 1: pad 06  
+row 2: pad 07  
+col 1: pad 04  
+col 2: pad 09  
+col 3: pad 10  
+col 4: pad 11  
+col 5: pad 13  
+col 6: pad 14  
+col 7: pad 15  
+col 8: pad 16  
 ```
 
 ![pcb1](./media/IMG_0927.jpeg)
 
 We will need these outgoing wires: 
 * to PCB2: `BAT-`, `GND`
-* to MCU: `BAT+`, `GND`, `Rows 1-2`, `Cols 1-8`
+* to MCU: `BAT+`, `GND`, `Rows 1-2`, `Cols 1-8`, `LED2`
 
 I did bridged a couple of pads on the PCB so that all wires except `BAT+` can go out from the holes in the center.
 
