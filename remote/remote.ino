@@ -181,7 +181,7 @@ void loop() {
     }
   }
 
-  data[5] = data[0] ^ data[1] ^ data[2] ^ data[3] ^ data[4] ^ data[5];
+  data[5] = data[0] ^ data[1] ^ data[2] ^ data[3] ^ data[4];
 
   // If the state hasn't been remaining neutral, we use an exponential
   // backoff strategy for resending the same neutral state.
