@@ -4,7 +4,7 @@
 
 I am dividing the electronics into two parts. The lower part is mounted on the chassis near the drive train. It contains the MCU, the audio player, and the H-bridges. The upper part is basically a hub for everything related to the head, arms, IR remote, and the push button. The two parts are connected with a ribbon cable and Dupont connectors.
 
-The power source is first fed to the switch. The switched power is fed to both the upper and the lower parts. The switch is a three way one. In addition to on and off, there is also a "play" mode. In that mode, two extra wires are connected. I didn't use it in v2. But here I am connecting one of them to `GND` and the other to a GPIO pin so that we can read the mode. So here's the finished switch, with one input and two outputs. The connectors are 2-pin JST RCYs. The female end can be directly plugged into standard 2.54mm Dupont male connectors. I had to enlarge the existing holes on the switch PCB using a small file. Otherwise it's rather trivial to cut existing wires and solder new ones. The following picture was taken before soldering wires for the mode switch.
+The power source is first fed to the switch. The switched power is then fed to both the upper and the lower parts. The switch is a three way one. In addition to on and off, there is also a "try me" mode. In that mode, two extra wires are connected. I didn't use it in v2. But here I am connecting one of them to `GND` and the other to a GPIO pin so that we can read the mode. So here's the finished switch, with one input and two outputs. The connectors are 2-pin JST RCYs. The female end can be directly plugged into standard 2.54mm Dupont male connectors. I had to enlarge the existing holes on the switch PCB using a small file. Otherwise it's rather trivial to cut existing wires and solder new ones. The following picture was taken before soldering wires for the mode switch.
 
 ![switch](./media/IMG_0359.jpeg)
 
@@ -15,6 +15,12 @@ I soldered all electronic components onto a perf board. It has the following int
 * Left and right motors
 * Speaker
 * Connectors for the upper part
+
+To help with soldering, I first drew all the connections using [Acorn](https://flyingmeat.com/acorn/), a simple image editing tool running on macos, capable of layer editing.
+
+![pcb_diagram](./schematics/perfboard.png)
+
+Here's the soldered perf board:
 
 ![lower_pcb](./media/IMG_1171.jpeg)
 
@@ -71,4 +77,4 @@ Before closing everything up, I am also exposing a USB-C port for uploading sket
 
 ![bottom_usb](./media/IMG_0888.jpeg)
 
-Now all the mechanical parts are in placed and properly assembled. It's time to play with the firmware.
+Now all the mechanical parts are in place and properly assembled. It's time to play with the firmware.

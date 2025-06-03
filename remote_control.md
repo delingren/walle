@@ -16,6 +16,8 @@ In v2, one issue I encountered was that the range of the remote control was poor
 
 To test the range, I devised an easy tester. On the [sender side](./debug/irrange_sender/), I repeatedly send the same code. On the [receiver side](./debug/irrange_receiver/), I check and verify the code repeatedly. If the code is not received within a timeframe, I light up a red LED. If the code is incorrect, I light up a yellow LED. Then I can walk around the room and test how far I can walk from the receiver and it still remains green.
 
+![range_tester](./media/IMG_1103.jpeg)
+
 It turned out that with two LEDs in series, I can reach a range of at least 6-7 meters on my testing apparatus. In practice, since the IR receiver is behind a brown window, the reception is weakened and partially blocked. But it still works well within 3-4 meters. Not too bad.
 
 ### Power saving
