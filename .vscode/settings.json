@@ -17,6 +17,7 @@
     "string_view": "cpp",
     "cstddef": "cpp",
     "locale": "cpp",
-    "new": "cpp"
+    "new": "cpp",
+    "ostream": "cpp"
   }
 }

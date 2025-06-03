@@ -704,93 +704,6 @@ void loop() {
 
     IrReceiver.resume();
 
-    // The Roku remote control
-    if (protocol == NEC) {
-      switch (code) {
-      case 3893872618: // Power
-        demo();
-        break;
-      case 2573649898: // Back
-        lookAround();
-        break;
-      case 4228106218: // Home
-        lookStraight();
-        break;
-
-      case 3860449258: // Up
-        forward();
-        break;
-      case 3425945578: // Down
-        backward();
-        break;
-      case 3776890858: // Left
-        spinLeft();
-        break;
-      case 3526215658: // Right
-        spinRight();
-        break;
-      case 3576350698: // OK
-        stop();
-        break;
-
-      case 2272839658: // Repeat
-        blinkTwice();
-        break;
-      case 2640496618: // Sleep
-        tiltEye();
-        break;
-      case 2657208298: // Star
-        breathe();
-        break;
-
-      case 3409233898: // Rewind
-        lookLeft();
-        break;
-      case 3008153578: // Play/Pause
-        playNextAudio();
-        break;
-      case 2857748458: // F. Fwd
-        lookRight();
-        break;
-
-      case 2907883498: // Netflix
-        forwardLeft();
-        break;
-      case 2991441898: // Hulu
-        backwardLeft();
-        break;
-      case 3024865258: // AmazonPrime
-        forwardRight();
-        break;
-      case 4077701098: // Disney
-        backwardRight();
-        break;
-
-      case 4144547818: // Vudu
-        leftArmUp();
-        break;
-      case 2974730218: // HBO
-        leftArmDown();
-        break;
-      case 2841036778: // YouTube
-        rightArmUp();
-        break;
-      case 4177971178: // Sling
-        rightArmDown();
-        break;
-
-      case 4027566058: // Vol Up
-        AudioQueue::queuePlay(2);
-        break;
-      case 4010854378: // Vol Down
-        AudioQueue::queuePlay(3);
-        break;
-      case 3743467498: // Mute
-        AudioQueue::queuePlay(1);
-        break;
-      }
-    }
-
     // Custom remote control
     if (protocol == PULSE_DISTANCE) {
       byte *p = (byte *)(&code);
@@ -837,11 +750,11 @@ void loop() {
 
           float left, right;
           if (xSign == ySign) {
-            right = ySign * max(abs(xNormalized), abs(yNormalized));
-            left = ySign * (abs(yNormalized) - abs(xNormalized));
-          } else {
             left = ySign * max(abs(xNormalized), abs(yNormalized));
             right = ySign * (abs(yNormalized) - abs(xNormalized));
+          } else {
+            right = ySign * max(abs(xNormalized), abs(yNormalized));
+            left = ySign * (abs(yNormalized) - abs(xNormalized));
           }
           leftTread.setValue(left);
           rightTread.setValue(right);
@@ -851,7 +764,7 @@ void loop() {
         if (y2 != 0) {
           static unsigned long last = millis();
 
-          // Range with which a normalized x value is considered "center"
+          // Range with which a normalized x value is considered "centered"
           const float thresholdLeft = -0.5;
           const float thresholdRight = 0.5;
 
@@ -885,7 +798,7 @@ void loop() {
 
         prevCode = code;
       } else {
-        Serial.println("Error detected");
+        DEBUG_OUTPUT("Error detected\n");
       }
     }
   }
