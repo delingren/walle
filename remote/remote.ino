@@ -1,8 +1,8 @@
-#define NO_LED_FEEDBACK_CODE
+#define FEEDBACK_LED_IS_ACTIVE_LOW
 #define DECODE_NEC
 #include "src/IRremote.hpp"
 
-#define NDEBUG 1
+#define NDEBUG
 // #undef NDEBUG
 
 #ifdef NDEBUG
@@ -108,22 +108,32 @@ public:
 
 class IrRemote {
 private:
-  int pin_;
+  uint8_t pin_;
 
 public:
-  IrRemote(int pin) : pin_(pin) {}
+  IrRemote(uint8_t pin) : pin_(pin) {}
 
   void begin() { IrSender.begin(pin_); }
 
-  void send(byte *buffer, int len) {
-    IrSender.sendPulseDistanceWidthFromArray(
-        &NECProtocolConstants, (IRRawDataType *)buffer, len * 8, 0);
+  void send(byte *data, int len) {
+#ifdef NDEBUG
+    Serial.print("Sending");
+    char buffer[8];
+    for (int i = 0; i < len; i++) {
+      sprintf(buffer, " %02X", data[i]);
+      Serial.print(buffer);
+    }
+    Serial.println();
+#endif
+
+    IrSender.sendPulseDistanceWidthFromArray(&NECProtocolConstants,
+                                             (IRRawDataType *)data, len * 8, 0);
   }
 };
 
 IrRemote remote(10);
 
-Joystick joystick1(A4, A2, A3);
+Joystick joystick1(A5, A2, A3);
 Joystick joystick2(A5, A6, A7);
 
 PushButton directButtons[] = {PushButton(A0), PushButton(A1)};
@@ -136,7 +146,7 @@ KeyMatrix matrix(rows, cols, pinsRows, pinsCols);
 
 void setup() {
 #ifdef NDEBUG
-  Serial.begin(9600);
+  Serial.begin(115200);
 #endif
 
   remote.begin();
