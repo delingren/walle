@@ -155,11 +155,7 @@ public:
     }
   }
 
-  void cancelAll() {
-    while (!animationQueue.empty()) {
-      animationQueue.pop();
-    }
-  }
+  bool isAnimating() { return !animationQueue.empty(); }
 
 protected:
   void transitionToNextAnimation(unsigned long millisNow) {
@@ -170,7 +166,6 @@ protected:
     millisStart = millisNow;
     valueStart = value_;
 
-    Serial.println("Next animation...");
     Animation &animation = animationQueue.front();
     if (animation.type == AnimationType::LinearByOver ||
         animation.type == AnimationType::LinearByAt) {
@@ -187,11 +182,6 @@ protected:
         return;
       }
       animation.value = valueTarget;
-
-      Serial.print(" current: ");
-      Serial.print(valueCurrent);
-      Serial.print(" target: ");
-      Serial.print(valueTarget);
     }
 
     if (animation.type == AnimationType::LinearToAt ||
@@ -204,11 +194,7 @@ protected:
           std::abs(animation.value - valueCurrent) / animation.speed;
 
       animation.millisDuration = duration;
-      Serial.print(" duration: ");
-      Serial.print(duration);
     }
-
-    Serial.println();
   }
 
   void updateFrame(unsigned long millisNow) {
@@ -228,7 +214,6 @@ protected:
       float fraction = static_cast<float>(millisNow - millisStart) /
                        static_cast<float>(animation.millisDuration);
       if (fraction >= 1.0) {
-        Serial.println(" done.");
         setValue(animation.value);
         animationQueue.pop();
         transitionToNextAnimation(millisNow);
@@ -236,12 +221,6 @@ protected:
         float valueNext =
             (1.0 - fraction) * valueStart + fraction * animation.value;
         setValue(valueNext);
-
-        Serial.print("fraction: ");
-        Serial.print(fraction);
-        Serial.print(" value: ");
-        Serial.print(valueNext);
-        Serial.println();
       }
 
       break;
@@ -321,6 +300,11 @@ private:
 class BiMotor : public Animatable {
   static constexpr float minValue = 0.20;
 
+private:
+  uint8_t pinSpeed_;
+  uint8_t pin1_;
+  uint8_t pin2_;
+
 public:
   BiMotor(uint8_t pinSpeed, uint8_t pin1, uint8_t pin2)
       : pinSpeed_(pinSpeed), pin1_(pin1), pin2_(pin2), Animatable() {
@@ -348,11 +332,6 @@ public:
     }
     analogWrite(pinSpeed_, static_cast<int>(std::abs(value) * 255.0));
   }
-
-private:
-  uint8_t pinSpeed_;
-  uint8_t pin1_;
-  uint8_t pin2_;
 };
 
 class PushButton {
@@ -514,7 +493,7 @@ void playNextAudio() {
 }
 
 void stop() {
-  std::array<Animation, 1> animations = {Animation::toOver(0, 200)};
+  std::array<Animation, 1> animations = {Animation::toOver(0, 400)};
   leftTread.queueAnimations(animations);
   rightTread.queueAnimations(animations);
 }
@@ -567,11 +546,26 @@ void rightArmUp() { rightArm.queueAnimation(Animation::toAt(1, 0.001f)); }
 
 void rightArmDown() { rightArm.queueAnimation(Animation::toAt(0, 0.001f)); }
 
+void leftArmMove(float value) {
+  leftArm.queueAnimation(Animation::byAt(value, 0.001f));
+}
+
+void rightArmMove(float value) {
+  rightArm.queueAnimation(Animation::byAt(value, 0.001f));
+}
+
 void breathe() {
   std::array<Animation, 2> animations = {Animation::toOver(0, 2000),
                                          Animation::toOver(1, 2000)};
   leftEye.queueAnimations(animations);
   rightEye.queueAnimations(animations);
+}
+
+void wink() {
+  std::array<Animation, 3> animations = {Animation::toOver(0, 60),
+                                         Animation::holdOver(300),
+                                         Animation::toOver(1, 60)};
+  leftEye.queueAnimations(animations);
 }
 
 void blinkTwice() {
@@ -703,6 +697,92 @@ void loop() {
     decode_type_t protocol = IrReceiver.decodedIRData.protocol;
 
     IrReceiver.resume();
+    // The Roku remote control
+    if (protocol == NEC) {
+      switch (code) {
+      case 3893872618: // Power
+        demo();
+        break;
+      case 2573649898: // Back
+        lookAround();
+        break;
+      case 4228106218: // Home
+        lookStraight();
+        break;
+
+      case 3860449258: // Up
+        forward();
+        break;
+      case 3425945578: // Down
+        backward();
+        break;
+      case 3776890858: // Left
+        spinLeft();
+        break;
+      case 3526215658: // Right
+        spinRight();
+        break;
+      case 3576350698: // OK
+        stop();
+        break;
+
+      case 2272839658: // Repeat
+        blinkTwice();
+        break;
+      case 2640496618: // Sleep
+        tiltEye();
+        break;
+      case 2657208298: // Star
+        breathe();
+        break;
+
+      case 3409233898: // Rewind
+        lookLeft();
+        break;
+      case 3008153578: // Play/Pause
+        playNextAudio();
+        break;
+      case 2857748458: // F. Fwd
+        lookRight();
+        break;
+
+      case 2907883498: // Netflix
+        forwardLeft();
+        break;
+      case 2991441898: // Hulu
+        backwardLeft();
+        break;
+      case 3024865258: // AmazonPrime
+        forwardRight();
+        break;
+      case 4077701098: // Disney
+        backwardRight();
+        break;
+
+      case 4144547818: // Vudu
+        leftArmUp();
+        break;
+      case 2974730218: // HBO
+        leftArmDown();
+        break;
+      case 2841036778: // YouTube
+        rightArmUp();
+        break;
+      case 4177971178: // Sling
+        rightArmDown();
+        break;
+
+      case 4027566058: // Vol Up
+        AudioQueue::queuePlay(2);
+        break;
+      case 4010854378: // Vol Down
+        AudioQueue::queuePlay(3);
+        break;
+      case 3743467498: // Mute
+        AudioQueue::queuePlay(1);
+        break;
+      }
+    }
 
     // Custom remote control
     if (protocol == PULSE_DISTANCE) {
@@ -725,21 +805,70 @@ void loop() {
             bool curr = (code >> i) & 1;
             bool prev = (prevCode >> i) & 1;
 
-            if (!curr && prev) {
-              Serial.print("Button ");
-              Serial.print(i - 16);
-              Serial.println(" released.");
-            }
-
             if (curr && !prev) {
-              Serial.print("Button ");
-              Serial.print(i - 16);
-              Serial.println(" pressed.");
+              // Button pressed
+              switch (i - 16) {
+              case 0: // R1
+                rightArmMove(0.1);
+                break;
+              case 1: // R2
+                rightArmMove(-0.1);
+                break;
+              case 2: // L1
+                leftArmMove(0.1);
+                break;
+              case 3: // L2
+                leftArmMove(-0.1);
+                break;
+              case 4: // SEL
+                wink();
+                break;
+              case 5: // MODE
+                demo();
+                break;
+              case 6: // N/A
+                break;
+              case 7: // START
+                playNextAudio();
+                break;
+              case 8: // A
+                backward();
+                break;
+              case 9: // X
+                spinLeft();
+                break;
+              case 10: // B
+                spinRight();
+                break;
+              case 11: // Y
+                forward();
+                break;
+              case 12: // Down
+                tiltEye();
+                break;
+              case 13: // Up
+                lookStraight();
+                break;
+              case 14: // Right
+                rotateHeadBy(0.1);
+                break;
+              case 15: // Left
+                rotateHeadBy(-0.1);
+                break;
+              case 16: // Joystick1
+                stop();
+                break;
+              case 17: // Joystick2
+                lookAround();
+                break;
+              default:
+                break;
+              }
             }
           }
         }
 
-        // if joystick 1 changed
+        // Joystick 1 position changed
         if ((code ^ prevCode) & 0x00000000FF) {
           // Normalize x and y values. Range: [-1,1]
           float xNormalized = x1 / 7.0;
@@ -764,7 +893,8 @@ void loop() {
         if (y2 != 0) {
           static unsigned long last = millis();
 
-          // Range with which a normalized x value is considered "centered"
+          // Range with which a normalized x value is considered
+          // "centered"
           const float thresholdLeft = -0.5;
           const float thresholdRight = 0.5;
 
@@ -787,11 +917,14 @@ void loop() {
             speed = 0;
           }
 
-          if (moveLeft && speed != 0) {
+          // Only queue an animation if the queue is empty. Otherwise
+          // it'd be animating long after the joystick is returned to
+          // the neutral position, which is not what we want.
+          if (moveLeft && speed != 0 && !leftArm.isAnimating()) {
             leftArm.queueAnimation(Animation::byAt(0.1 * ySign, speed));
           }
 
-          if (moveRight && speed != 0) {
+          if (moveRight && speed != 0 && !rightArm.isAnimating()) {
             rightArm.queueAnimation(Animation::byAt(0.1 * ySign, speed));
           }
         }
