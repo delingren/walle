@@ -666,7 +666,6 @@ void setup() {
   delay(50);
   audioPlayer.setVolume(15);
   delay(50);
-  // audioPlayer.playSpecified(1);
 
   pinMode(pinTrialMode, INPUT_PULLUP);
   trialMode = digitalRead(pinTrialMode);
@@ -681,7 +680,6 @@ void setup() {
 }
 
 void loop() {
-  Animatable::updateFrame();
   AudioQueue::updateFrame();
 
   if (pushButton.isPushed()) {
