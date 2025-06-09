@@ -582,7 +582,20 @@ void lookLeft() { head.queueAnimation(Animation::toAt(0, 0.0005)); }
 
 void lookRight() { head.queueAnimation(Animation::toAt(1, 0.0005)); }
 
-void lookStraight() { head.queueAnimation(Animation::toAt(0.5, 0.0005)); }
+void homePosition() {
+  head.queueAnimation(Animation::toAt(0.5, 0.0005));
+
+  Animation neutral = Animation::toAt(0, 0.0005);
+  leftArm.queueAnimation(neutral);
+  rightArm.queueAnimation(neutral);
+  eyeTilter.queueAnimation(neutral);
+  leftTread.queueAnimation(neutral);
+  rightTread.queueAnimation(neutral);
+
+  Animation lit = Animation::toAt(1, 0.0005);
+  leftEye.queueAnimation(lit);
+  rightEye.queueAnimation(lit);
+}
 
 void rotateHeadBy(float value) {
   head.queueAnimation(Animation::byAt(value, 0.0005));
@@ -617,24 +630,43 @@ void toggleRightArm() {
   }
 }
 
-void lookAround() {
-  // Turn left, right, then straight
-  std::array<Animation, 3> animations1 = {
-      Animation::toOver(0, 700),
-      Animation::toOver(1, 1400),
-      Animation::toOver(0.5, 700),
+void dance() {
+  // Turn head to the left, right, then straight
+  std::array<Animation, 4> animations1 = {
+      Animation::toOver(0.5, 200),
+      Animation::toOver(0, 1000),
+      Animation::toOver(1, 1000),
+      Animation::toOver(0.5, 1000),
   };
+  head.queueAnimations(animations1);
+
   // Open eyes, hold while turning head, then blink twice
   std::array<Animation, 9> animations2 = {
-      Animation::toOver(1, 0),  Animation::holdOver(3000),
+      Animation::toOver(1, 0),  Animation::holdOver(4000),
       Animation::toOver(0, 20), Animation::holdOver(100),
       Animation::toOver(1, 20), Animation::holdOver(300),
       Animation::toOver(0, 20), Animation::holdOver(100),
       Animation::toOver(1, 20)};
-
-  head.queueAnimations(animations1);
   leftEye.queueAnimations(animations2);
   rightEye.queueAnimations(animations2);
+
+  // Turn left, turn right, forward, backward.
+  std::array<Animation, 9> animations3 = {
+      Animation::toOver(0, 200), Animation::toOver(-1, 700),
+      Animation::holdOver(700),  Animation::toOver(1, 700),
+      Animation::holdOver(700),  Animation::toOver(0, 200),
+      Animation::toOver(1, 500), Animation::toOver(-1, 1000),
+      Animation::toOver(0, 500),
+  };
+  std::array<Animation, 9> animations4 = {
+      Animation::toOver(0, 200), Animation::toOver(1, 700),
+      Animation::holdOver(700),  Animation::toOver(-1, 700),
+      Animation::holdOver(700),  Animation::toOver(0, 200),
+      Animation::toOver(1, 500), Animation::toOver(-1, 1000),
+      Animation::toOver(0, 500),
+  };
+  leftTread.queueAnimations(animations3);
+  rightTread.queueAnimations(animations4);
 }
 
 void setup() {
@@ -680,6 +712,7 @@ void setup() {
 }
 
 void loop() {
+  Animatable::updateFrame();
   AudioQueue::updateFrame();
 
   if (pushButton.isPushed()) {
@@ -702,10 +735,10 @@ void loop() {
         demo();
         break;
       case 2573649898: // Back
-        lookAround();
+        dance();
         break;
       case 4228106218: // Home
-        lookStraight();
+        homePosition();
         break;
 
       case 3860449258: // Up
@@ -845,7 +878,7 @@ void loop() {
                 tiltEye();
                 break;
               case 13: // Up
-                lookStraight();
+                homePosition();
                 break;
               case 14: // Right
                 rotateHeadBy(0.1);
@@ -857,7 +890,7 @@ void loop() {
                 stop();
                 break;
               case 17: // Joystick2
-                lookAround();
+                dance();
                 break;
               default:
                 break;
