@@ -36,8 +36,8 @@ void resetIdleCount();
 constexpr uint8_t pinIrRemote = 3;
 constexpr uint8_t pinPushButton = 15;
 constexpr uint8_t pinEyeTilter = 2;
-constexpr uint8_t pinEyeLedL = 4;
-constexpr uint8_t pinEyeLedR = 5;
+constexpr uint8_t pinEyeLedL = 5;
+constexpr uint8_t pinEyeLedR = 4;
 constexpr uint8_t pinHead = 6;
 constexpr uint8_t pinArmL = 7;
 constexpr uint8_t pinArmR = 8;
@@ -565,7 +565,7 @@ void wink() {
   std::array<Animation, 3> animations = {Animation::toOver(0, 60),
                                          Animation::holdOver(300),
                                          Animation::toOver(1, 60)};
-  leftEye.queueAnimations(animations);
+  rightEye.queueAnimations(animations);
 }
 
 void blinkTwice() {
