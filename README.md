@@ -63,3 +63,9 @@ Here is the demo video (on YouTube) of the final product, controlled by a Roku r
 
 [![demo](http://img.youtube.com/vi/jzXZmGbrTi8/0.jpg)](https://youtu.be/jzXZmGbrTi8)
 
+
+## Remote functions
+
+![remote_legend](./remote_legend.jpeg)
+
+![gamepad_legend](./gamepad_legend.jpeg)

@@ -16,6 +16,8 @@ So I have defined all these permutations, in addition to a constant animation (o
 1. If an animation has reached its target value, we remove it from the list and enqueue the next animation.
 1. When a new animation is enqueued, we calculate its target value if its value is specified in relative terms.
 
+With the animation library, we can then easily choreograph sequences of moves and associate them with remote control buttons. Since we also have a play mode and a trial mode, we can also do different things based on the mode. I have defined a `trialMode` boolean in the sketch. I'm only using it for the startup moves so far.
+
 ### Libraries
 
 Instead of relying on Arduino IDE's library manager, I enlisted DYPlayer and IRRemote libraries as submodules and froze them at the current version. So that it's more self contained and resistant to future breaking changes to these libraries. The Servo library, however, is part of RP2040 board SDK which uses PIO instead of PWM. There is no need to enlist it as a submodule, unless I also enlist the whole SDK, which is unnecessarily complicated.
