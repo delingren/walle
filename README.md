@@ -61,4 +61,5 @@ The rest of the documentation is organized as follows.
 
 Here is the demo video (on YouTube) of the final product, controlled by a Roku remote control and my custom remote control. It opens on youtube.
 
-[![demo](http://img.youtube.com/vi/PiLhb5Huz5E/0.jpg)](http://www.youtube.com/watch?v=PiLhb5Huz5E)
+[![demo](http://img.youtube.com/vi/jzXZmGbrTi8/0.jpg)](https://youtu.be/jzXZmGbrTi8)
+
