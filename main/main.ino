@@ -7,6 +7,7 @@
 
 #include "src/DYPlayerArduino.h"
 #define DECODE_NEC // Decodes NEC, NEC2, and ONKYO
+#define DECODE_DISTANCE_WIDTH
 #include "src/IRremote.hpp"
 
 #ifdef NDEBUG
@@ -33,17 +34,22 @@ void resetIdleCount();
 
 // Pin assignments
 constexpr uint8_t pinIrRemote = 3;
-constexpr uint8_t pinPushButton = 9;
+constexpr uint8_t pinPushButton = 15;
 constexpr uint8_t pinEyeTilter = 2;
-constexpr uint8_t pinEyeLedL = 4;
-constexpr uint8_t pinEyeLedR = 5;
+constexpr uint8_t pinEyeLedL = 5;
+constexpr uint8_t pinEyeLedR = 4;
 constexpr uint8_t pinHead = 6;
 constexpr uint8_t pinArmL = 7;
 constexpr uint8_t pinArmR = 8;
-constexpr uint8_t pinMotorL1 = 10;
-constexpr uint8_t pinMotorL2 = 11;
-constexpr uint8_t pinMotorR1 = 12;
-constexpr uint8_t pinMotorR2 = 13;
+constexpr uint8_t pinMotorLs = 14;
+constexpr uint8_t pinMotorL1 = 12;
+constexpr uint8_t pinMotorL2 = 13;
+constexpr uint8_t pinMotorRs = 9;
+constexpr uint8_t pinMotorR1 = 11;
+constexpr uint8_t pinMotorR2 = 10;
+constexpr uint8_t pinTrialMode = 26;
+constexpr unsigned int millisIdle = 10000;
+constexpr unsigned int millisBreathing = 3600;
 
 // Servo limits, in terms of pulse width in microseconds
 constexpr int minArmL = 2200;
@@ -58,7 +64,7 @@ enum AnimationType {
   // milliseconds
   LinearToOver,
   // Change the value linearly to a target value, at a specified speed, in
-  // fraction per milleseconds
+  // fraction per milliseconds
   LinearToAt,
   // Change the value linearly by an increment, over a specified duration
   LinearByOver,
@@ -71,10 +77,10 @@ enum AnimationType {
 struct Animation {
   AnimationType type;
   union {
-    unsigned long millisDuration;
-    float speed; // fraction per millisecond
+    unsigned long millisDuration; // milliseconds
+    float speed;                  // fraction per millisecond
   };
-  float value;
+  float value; // target or incremental
 
   // to: absolute target value
   // by: incremental value
@@ -121,49 +127,6 @@ public:
     }
   }
 
-  virtual void setValue(float value) { value_ = value; }
-  float getValue() { return value_; }
-
-  void queueAnimation(Animation animation) {
-    if (animationQueue.empty()) {
-      millisStart = millis();
-      valueStart = value_;
-    }
-
-    if (animation.type == AnimationType::LinearByOver ||
-        animation.type == AnimationType::LinearByAt) {
-      // Calculate the target value based on the current value and the
-      // increment.
-      constexpr float epsilon = 0.05;
-      float valueCurrent = getValue();
-      float valueTarget = clamp(valueCurrent + animation.value, 0.0f, 1.0f);
-      if (std::abs(valueCurrent - valueTarget) <= epsilon) {
-        return;
-      }
-      animation.value = valueTarget;
-    }
-
-    if (animation.type == AnimationType::LinearToAt ||
-        animation.type == AnimationType::LinearByAt) {
-      // Calculate the duration based on the speed and the increment.
-      float valueCurrent = getValue();
-
-      unsigned long duration =
-          std::abs(animation.value - valueCurrent) / animation.speed;
-
-      animation.millisDuration = duration;
-    }
-
-    animationQueue.push(animation);
-  }
-
-  template <size_t N>
-  void queueAnimations(const std::array<Animation, N> animations) {
-    for (auto animation : animations) {
-      queueAnimation(animation);
-    }
-  }
-
 protected:
   static std::vector<Animatable *> animatables;
 
@@ -174,6 +137,27 @@ protected:
 
   Animatable() { animatables.push_back(this); }
 
+  virtual void setValue(float value) { value_ = value; }
+  float getValue() { return value_; }
+
+public:
+  void queueAnimation(Animation animation) {
+    animationQueue.push(animation);
+    if (animationQueue.size() == 1) {
+      transitionToNextAnimation(millis());
+    }
+  }
+
+  template <size_t N>
+  void queueAnimations(const std::array<Animation, N> animations) {
+    for (auto animation : animations) {
+      queueAnimation(animation);
+    }
+  }
+
+  bool isAnimating() { return !animationQueue.empty(); }
+
+protected:
   void transitionToNextAnimation(unsigned long millisNow) {
     if (animationQueue.empty()) {
       millisStart = 0;
@@ -181,6 +165,36 @@ protected:
     }
     millisStart = millisNow;
     valueStart = value_;
+
+    Animation &animation = animationQueue.front();
+    if (animation.type == AnimationType::LinearByOver ||
+        animation.type == AnimationType::LinearByAt) {
+      // Calculate the target value based on the current value and the
+      // increment.
+
+      constexpr float epsilon = 0.05;
+      float valueCurrent = getValue();
+
+      float valueTarget = clamp(valueCurrent + animation.value, 0.0f, 1.0f);
+      if (std::abs(valueCurrent - valueTarget) <= epsilon) {
+        animationQueue.pop();
+        transitionToNextAnimation(millisNow);
+        return;
+      }
+      animation.value = valueTarget;
+    }
+
+    if (animation.type == AnimationType::LinearToAt ||
+        animation.type == AnimationType::LinearByAt) {
+      // Calculate the duration based on the speed and the increment.
+      float valueCurrent = getValue();
+
+      // animation.value is already target value, rather than the increment.
+      unsigned long duration =
+          std::abs(animation.value - valueCurrent) / animation.speed;
+
+      animation.millisDuration = duration;
+    }
   }
 
   void updateFrame(unsigned long millisNow) {
@@ -208,6 +222,7 @@ protected:
             (1.0 - fraction) * valueStart + fraction * animation.value;
         setValue(valueNext);
       }
+
       break;
     }
 
@@ -283,37 +298,40 @@ private:
 
 // Bidirectional motor, controlled by an H-bridge
 class BiMotor : public Animatable {
-  static constexpr float low_threshold = 0.1;
+  static constexpr float minValue = 0.20;
+
+private:
+  uint8_t pinSpeed_;
+  uint8_t pin1_;
+  uint8_t pin2_;
 
 public:
-  BiMotor(uint8_t pin1, uint8_t pin2) : pin1_(pin1), pin2_(pin2), Animatable() {
+  BiMotor(uint8_t pinSpeed, uint8_t pin1, uint8_t pin2)
+      : pinSpeed_(pinSpeed), pin1_(pin1), pin2_(pin2), Animatable() {
+    pinMode(pinSpeed, OUTPUT);
     pinMode(pin1, OUTPUT);
     pinMode(pin2, OUTPUT);
   }
 
   void setValue(float value) override {
-    Animatable::setValue(value);
-
-    int value1;
-    int value2;
-    if (abs(value) < low_threshold) {
-      value1 = 0;
-      value2 = 0;
-    } else if (value > 0) {
-      value1 = 0;
-      value2 = static_cast<int>(value * 255.0);
-    } else {
-      value1 = static_cast<int>(-value * 255.0);
-      value2 = 0;
+    if (std::abs(value) <= minValue) {
+      value = 0;
     }
 
-    analogWrite(pin1_, value1);
-    analogWrite(pin2_, value2);
-  }
+    Animatable::setValue(value);
 
-private:
-  uint8_t pin1_;
-  uint8_t pin2_;
+    if (value > 0) {
+      digitalWrite(pin1_, 1);
+      digitalWrite(pin2_, 0);
+    } else if (value < 0) {
+      digitalWrite(pin1_, 0);
+      digitalWrite(pin2_, 1);
+    } else {
+      digitalWrite(pin1_, 0);
+      digitalWrite(pin2_, 0);
+    }
+    analogWrite(pinSpeed_, static_cast<int>(std::abs(value) * 255.0));
+  }
 };
 
 class PushButton {
@@ -333,14 +351,14 @@ public:
       return false;
     }
     last_ = now;
-    int state = digitalRead(pin_);
+    int bitmap = digitalRead(pin_);
     // No hold and repeat. The button is only considered pushed
     // if it was released in the previous scan.
-    if (state == LOW && released_) {
+    if (bitmap == LOW && released_) {
       released_ = false;
       return true;
     }
-    if (state == HIGH) {
+    if (bitmap == HIGH) {
       released_ = true;
     }
     return false;
@@ -415,8 +433,8 @@ AnimatableServo head(pinHead, minHead, maxHead);
 AnimatableServo leftArm(pinArmL, minArmL, maxArmL);
 AnimatableServo rightArm(pinArmR, minArmR, maxArmR);
 UniMotor eyeTilter(pinEyeTilter);
-BiMotor leftTread(pinMotorL1, pinMotorL2);
-BiMotor rightTread(pinMotorR1, pinMotorR2);
+BiMotor leftTread(pinMotorLs, pinMotorL1, pinMotorL2);
+BiMotor rightTread(pinMotorRs, pinMotorR1, pinMotorR2);
 Led leftEye(pinEyeLedL);
 Led rightEye(pinEyeLedR);
 PushButton pushButton(pinPushButton);
@@ -424,13 +442,9 @@ PushButton pushButton(pinPushButton);
 DY::Player audioPlayer(&Serial1);
 AudioQueue AudioQueue::audioQueue(audioPlayer);
 
-static unsigned long millisIdleStart;
-static float breathingPhase = 1; // a value in the range of [0-1]
-
-void setIdleBreathing() {
-  leftEye.setValue(breathingPhase);
-  rightEye.setValue(breathingPhase);
-}
+unsigned long millisIdleStart;
+float breathingPhase = 1; // a value in the range of [0-1]
+boolean trialMode = false;
 
 void resetIdleCount() {
   if (isIdling()) {
@@ -442,7 +456,7 @@ void resetIdleCount() {
 
 void setIdle() { millisIdleStart = 0; }
 
-bool isIdling() { return millis() - millisIdleStart >= 5000; }
+bool isIdling() { return millis() - millisIdleStart >= millisIdle; }
 
 void demo() {
   // Hold, look left, right, then straight
@@ -462,9 +476,9 @@ void demo() {
   leftEye.queueAnimations(eyeAnimation);
   rightEye.queueAnimations(eyeAnimation);
 
-  // Wait, then play walle-e
+  // Wait, then play wall-e sound
   AudioQueue::queueDelay(5000);
-  AudioQueue::queuePlay(2);
+  AudioQueue::queuePlay(1);
 }
 
 void playNextAudio() {
@@ -479,7 +493,7 @@ void playNextAudio() {
 }
 
 void stop() {
-  std::array<Animation, 1> animations = {Animation::toOver(0, 200)};
+  std::array<Animation, 1> animations = {Animation::toOver(0, 400)};
   leftTread.queueAnimations(animations);
   rightTread.queueAnimations(animations);
 }
@@ -524,14 +538,6 @@ void backwardRight() {
   rightTread.queueAnimation(Animation::toOver(0, 200));
 }
 
-void leftArmMove(float value) {
-  leftArm.queueAnimation(Animation::byAt(value, 0.001f));
-}
-
-void rightArmMove(float value) {
-  rightArm.queueAnimation(Animation::byAt(value, 0.001f));
-}
-
 void leftArmUp() { leftArm.queueAnimation(Animation::toAt(1, 0.001f)); }
 
 void leftArmDown() { leftArm.queueAnimation(Animation::toAt(0, 0.001f)); }
@@ -540,10 +546,25 @@ void rightArmUp() { rightArm.queueAnimation(Animation::toAt(1, 0.001f)); }
 
 void rightArmDown() { rightArm.queueAnimation(Animation::toAt(0, 0.001f)); }
 
+void leftArmMove(float value) {
+  leftArm.queueAnimation(Animation::byAt(value, 0.001f));
+}
+
+void rightArmMove(float value) {
+  rightArm.queueAnimation(Animation::byAt(value, 0.001f));
+}
+
 void breathe() {
   std::array<Animation, 2> animations = {Animation::toOver(0, 2000),
                                          Animation::toOver(1, 2000)};
   leftEye.queueAnimations(animations);
+  rightEye.queueAnimations(animations);
+}
+
+void wink() {
+  std::array<Animation, 3> animations = {Animation::toOver(0, 60),
+                                         Animation::holdOver(300),
+                                         Animation::toOver(1, 60)};
   rightEye.queueAnimations(animations);
 }
 
@@ -561,7 +582,20 @@ void lookLeft() { head.queueAnimation(Animation::toAt(0, 0.0005)); }
 
 void lookRight() { head.queueAnimation(Animation::toAt(1, 0.0005)); }
 
-void lookStraight() { head.queueAnimation(Animation::toAt(0.5, 0.0005)); }
+void homePosition() {
+  head.queueAnimation(Animation::toAt(0.5, 0.0005));
+
+  Animation neutral = Animation::toAt(0, 0.0005);
+  leftArm.queueAnimation(neutral);
+  rightArm.queueAnimation(neutral);
+  eyeTilter.queueAnimation(neutral);
+  leftTread.queueAnimation(neutral);
+  rightTread.queueAnimation(neutral);
+
+  Animation lit = Animation::toAt(1, 0.0005);
+  leftEye.queueAnimation(lit);
+  rightEye.queueAnimation(lit);
+}
 
 void rotateHeadBy(float value) {
   head.queueAnimation(Animation::byAt(value, 0.0005));
@@ -596,24 +630,43 @@ void toggleRightArm() {
   }
 }
 
-void lookAround() {
-  // Turn left, right, then straight
-  std::array<Animation, 3> animations1 = {
-      Animation::toOver(0, 700),
-      Animation::toOver(1, 1400),
-      Animation::toOver(0.5, 700),
+void dance() {
+  // Turn head to the left, right, then straight
+  std::array<Animation, 4> animations1 = {
+      Animation::toOver(0.5, 200),
+      Animation::toOver(0, 1000),
+      Animation::toOver(1, 1000),
+      Animation::toOver(0.5, 1000),
   };
+  head.queueAnimations(animations1);
+
   // Open eyes, hold while turning head, then blink twice
   std::array<Animation, 9> animations2 = {
-      Animation::toOver(1, 0),  Animation::holdOver(3000),
+      Animation::toOver(1, 0),  Animation::holdOver(4000),
       Animation::toOver(0, 20), Animation::holdOver(100),
       Animation::toOver(1, 20), Animation::holdOver(300),
       Animation::toOver(0, 20), Animation::holdOver(100),
       Animation::toOver(1, 20)};
-
-  head.queueAnimations(animations1);
   leftEye.queueAnimations(animations2);
   rightEye.queueAnimations(animations2);
+
+  // Turn left, turn right, forward, backward.
+  std::array<Animation, 9> animations3 = {
+      Animation::toOver(0, 200), Animation::toOver(-1, 700),
+      Animation::holdOver(700),  Animation::toOver(1, 700),
+      Animation::holdOver(700),  Animation::toOver(0, 200),
+      Animation::toOver(1, 500), Animation::toOver(-1, 1000),
+      Animation::toOver(0, 500),
+  };
+  std::array<Animation, 9> animations4 = {
+      Animation::toOver(0, 200), Animation::toOver(1, 700),
+      Animation::holdOver(700),  Animation::toOver(-1, 700),
+      Animation::holdOver(700),  Animation::toOver(0, 200),
+      Animation::toOver(1, 500), Animation::toOver(-1, 1000),
+      Animation::toOver(0, 500),
+  };
+  leftTread.queueAnimations(animations3);
+  rightTread.queueAnimations(animations4);
 }
 
 void setup() {
@@ -646,10 +699,14 @@ void setup() {
   audioPlayer.setVolume(15);
   delay(50);
 
-#ifndef NDEBUG
-  // For some reason, the dyplayer reverses tracks 1 and 2.
-  audioPlayer.playSpecified(2);
-#endif
+  pinMode(pinTrialMode, INPUT_PULLUP);
+  trialMode = digitalRead(pinTrialMode);
+
+  if (trialMode) {
+    demo();
+  } else {
+    AudioQueue::queuePlay(1);
+  }
 
   resetIdleCount();
 }
@@ -667,11 +724,10 @@ void loop() {
   if (IrReceiver.decode()) {
     resetIdleCount();
 
-    uint32_t code = IrReceiver.decodedIRData.decodedRawData;
+    uint64_t code = IrReceiver.decodedIRData.decodedRawData;
     decode_type_t protocol = IrReceiver.decodedIRData.protocol;
 
     IrReceiver.resume();
-
     // The Roku remote control
     if (protocol == NEC) {
       switch (code) {
@@ -679,10 +735,10 @@ void loop() {
         demo();
         break;
       case 2573649898: // Back
-        lookAround();
+        dance();
         break;
       case 4228106218: // Home
-        lookStraight();
+        homePosition();
         break;
 
       case 3860449258: // Up
@@ -759,162 +815,185 @@ void loop() {
       }
     }
 
-    // My custom remote control. The library sometimes reports NEC2, sometimes
-    // ONKYO. They are probably distinguishable from the raw code. I'll just
-    // include them both.
-    if (protocol == NEC2 || protocol == ONKYO) {
-      uint16_t type = (code & 0xFF000000) >> 24;
-      uint16_t value = (code & 0x0000FFFF);
-
-      switch (type) {
-      case 2: { // Left joystick
-        uint8_t xRaw = (value & 0xFF00) >> 8;
-        uint8_t yRaw = (value & 0x00FF) >> 0;
-
-        // Normalize x and y values. Range: [-1,1]
-        float xNormalized = (xRaw - 127.5) / 127.5;
-        float yNormalized = (yRaw - 127.5) / 127.5;
-
-        float xSign = xNormalized >= 0 ? 1 : -1;
-        float ySign = yNormalized >= 0 ? 1 : -1;
-
-        float left, right;
-        if (xSign == ySign) {
-          right = ySign * max(abs(xNormalized), abs(yNormalized));
-          left = ySign * (abs(yNormalized) - abs(xNormalized));
-        } else {
-          left = ySign * max(abs(xNormalized), abs(yNormalized));
-          right = ySign * (abs(yNormalized) - abs(xNormalized));
-        }
-        leftTread.setValue(left);
-        rightTread.setValue(right);
-        break;
+    // Custom remote control
+    if (protocol == PULSE_DISTANCE) {
+      byte *p = (byte *)(&code);
+      byte correction = 0;
+      for (int i = 0; i < 6; i++) {
+        correction ^= p[i];
       }
+      if (correction == 0) {
+        static uint64_t prevCode = 0x000000008888; // The neutral state
 
-      case 3: { // Right joystick
-        // Range with which a normalized x value is considered "center"
-        const float thresholdLeft = -0.5;
-        const float thresholdRight = 0.5;
+        int8_t x1, y1;
+        int8_t x2, y2;
+        decodeJoystick(p[0], x1, y1);
+        decodeJoystick(p[1], x2, y2);
 
-        // Timestamp of last arm movement, to avoid moving arms too fast.
-        static unsigned long millisLastArmMove = 0;
-        unsigned long millisNow = millis();
-        if (millisNow - millisLastArmMove < 500) {
-          break;
+        // if any of the button bits (16 - 40) has changed
+        if ((code ^ prevCode) & 0xFFFFFF0000) {
+          for (int i = 16; i < 40; i++) {
+            bool curr = (code >> i) & 1;
+            bool prev = (prevCode >> i) & 1;
+
+            if (curr && !prev) {
+              // Button pressed
+              switch (i - 16) {
+              case 0: // R1
+                rightArmMove(0.1);
+                break;
+              case 1: // R2
+                rightArmMove(-0.1);
+                break;
+              case 2: // L1
+                leftArmMove(0.1);
+                break;
+              case 3: // L2
+                leftArmMove(-0.1);
+                break;
+              case 4: // SEL
+                wink();
+                break;
+              case 5: // MODE
+                demo();
+                break;
+              case 6: // N/A
+                break;
+              case 7: // START
+                playNextAudio();
+                break;
+              case 8: // A
+                backward();
+                break;
+              case 9: // X
+                spinLeft();
+                break;
+              case 10: // B
+                spinRight();
+                break;
+              case 11: // Y
+                forward();
+                break;
+              case 12: // Down
+                tiltEye();
+                break;
+              case 13: // Up
+                homePosition();
+                break;
+              case 14: // Right
+                rotateHeadBy(0.1);
+                break;
+              case 15: // Left
+                rotateHeadBy(-0.1);
+                break;
+              case 16: // Joystick1
+                stop();
+                break;
+              case 17: // Joystick2
+                dance();
+                break;
+              default:
+                break;
+              }
+            }
+          }
         }
 
-        // Joy stick positions. Range: [0,255]
-        uint8_t xRaw = (value & 0xFF00) >> 8;
-        uint8_t yRaw = (value & 0x00FF) >> 0;
+        // Joystick 1 position changed
+        if ((code ^ prevCode) & 0x00000000FF) {
+          // Normalize x and y values. Range: [-1,1]
+          float xNormalized = x1 / 7.0;
+          float yNormalized = y1 / 7.0;
 
-        // Normalize x and y values. Range: [-1,1]
-        float xNormalized = (xRaw - 127.5) / 127.5;
-        float yNormalized = (yRaw - 127.5) / 127.5;
+          float xSign = xNormalized >= 0 ? 1 : -1;
+          float ySign = yNormalized >= 0 ? 1 : -1;
 
-        bool moveLeft = xNormalized <= thresholdRight;
-        bool moveRight = xNormalized >= thresholdLeft;
-
-        // Calcualte the amount to move: nothing, a little, or a lot.
-        float ySign = yNormalized >= 0 ? 1 : -1;
-        float yAbsolute = abs(yNormalized);
-        float moveAmount;
-        if (yAbsolute > 0.95) {
-          moveAmount = 0.2 * ySign;
-        } else if (yAbsolute > 0.1) {
-          moveAmount = 0.1 * ySign;
-        } else {
-          moveAmount = 0;
+          float left, right;
+          if (xSign == ySign) {
+            left = ySign * max(abs(xNormalized), abs(yNormalized));
+            right = ySign * (abs(yNormalized) - abs(xNormalized));
+          } else {
+            right = ySign * max(abs(xNormalized), abs(yNormalized));
+            left = ySign * (abs(yNormalized) - abs(xNormalized));
+          }
+          leftTread.setValue(left);
+          rightTread.setValue(right);
         }
 
-        if (moveAmount != 0 && moveLeft) {
-          leftArmMove(moveAmount);
-          millisLastArmMove = millisNow;
-        }
-        if (moveAmount != 0 && moveRight) {
-          rightArmMove(moveAmount);
-          millisLastArmMove = millisNow;
+        // Joystick 2 is not in the neutral position
+        if (y2 != 0) {
+          static unsigned long last = millis();
+
+          // Range with which a normalized x value is considered
+          // "centered"
+          const float thresholdLeft = -0.5;
+          const float thresholdRight = 0.5;
+
+          // Normalize x and y values. Range: [-1,1]
+          float xNormalized = x2 / 7.0;
+          float yNormalized = y2 / 7.0;
+
+          bool moveLeft = xNormalized <= thresholdRight;
+          bool moveRight = xNormalized >= thresholdLeft;
+
+          // Calculate the speed to move: fast, slow, or still
+          float ySign = yNormalized >= 0 ? 1 : -1;
+          float yAbsolute = abs(yNormalized);
+          float speed;
+          if (yAbsolute > 0.85) {
+            speed = 0.0003;
+          } else if (yAbsolute > 0.25) {
+            speed = 0.00015;
+          } else {
+            speed = 0;
+          }
+
+          // Only queue an animation if the queue is empty. Otherwise
+          // it'd be animating long after the joystick is returned to
+          // the neutral position, which is not what we want.
+          if (moveLeft && speed != 0 && !leftArm.isAnimating()) {
+            leftArm.queueAnimation(Animation::byAt(0.1 * ySign, speed));
+          }
+
+          if (moveRight && speed != 0 && !rightArm.isAnimating()) {
+            rightArm.queueAnimation(Animation::byAt(0.1 * ySign, speed));
+          }
         }
 
-        break;
-      }
-      case 1: {
-        // Button push
-        uint16_t key = value;
-        switch (key) {
-        case 23: // L1
-          leftArmMove(0.1);
-          break;
-        case 24: // L2
-          leftArmMove(-0.1);
-          break;
-        case 21: // R1
-          rightArmMove(0.1);
-          break;
-        case 22: // R2
-          rightArmMove(-0.1);
-          break;
-        case 25: // Select
-          setIdle();
-          break;
-        case 26: // Mode
-          demo();
-          break;
-        case 28: // Start
-          playNextAudio();
-          break;
-        case 38: // Left
-          rotateHeadBy(-0.1);
-          break;
-        case 37: // Right
-          rotateHeadBy(0.1);
-          break;
-        case 36: // Up
-          lookStraight();
-          break;
-        case 35: // Down
-          tiltEye();
-          break;
-        case 32: // X
-          spinLeft();
-          break;
-        case 34: // Y
-          forward();
-          break;
-        case 31: // A
-          backward();
-          break;
-        case 33: // B
-          spinRight();
-          break;
-        case 1: // Joystick 1
-          stop();
-          break;
-        case 2: // Joystick 2
-          lookAround();
-          break;
-        default:
-          break;
-        }
-        break;
-      }
+        prevCode = code;
+      } else {
+        DEBUG_OUTPUT("Error detected\n");
       }
     }
   }
 
   if (isIdling()) {
-
     leftTread.setValue(0);
     rightTread.setValue(0);
 
-    constexpr unsigned long breathingCycle = 3600;
-    unsigned long idleDuration = (millis() - millisIdleStart) % breathingCycle;
+    unsigned long idleDuration = (millis() - millisIdleStart) % millisBreathing;
 
-    if (idleDuration < breathingCycle / 2.0) {
-      breathingPhase = 1.0 - idleDuration / (breathingCycle / 2.0);
+    if (idleDuration < millisBreathing / 2.0) {
+      breathingPhase = 1.0 - idleDuration / (millisBreathing / 2.0);
     } else {
-      breathingPhase = -1.0 + idleDuration / (breathingCycle / 2.0);
+      breathingPhase = -1.0 + idleDuration / (millisBreathing / 2.0);
     }
 
-    setIdleBreathing();
+    leftEye.setValue(breathingPhase);
+    rightEye.setValue(breathingPhase);
+  }
+}
+
+void decodeJoystick(byte code, int8_t &x, int8_t &y) {
+  if (code & 0x08) {
+    x = -(code & 0x07);
+  } else {
+    x = code & 0x07;
+  }
+
+  if (code & 0x80) {
+    y = -((code & 0x70) >> 4);
+  } else {
+    y = (code & 0x70) >> 4;
   }
 }

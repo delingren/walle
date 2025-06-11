@@ -4,22 +4,29 @@
 
 I am dividing the electronics into two parts. The lower part is mounted on the chassis near the drive train. It contains the MCU, the audio player, and the H-bridges. The upper part is basically a hub for everything related to the head, arms, IR remote, and the push button. The two parts are connected with a ribbon cable and Dupont connectors.
 
-The power source is first fed to the switch. The switched power is fed to both the upper and the lower parts. The switch is a three way one. In addition to on and off, there is also a "play" mode. In that mode, the brown and purple wires are connected. I could potentially utilize it and read it in the MCU. I am not really sure what to do with the information though. So I am skipping it and keeping it simple. So here's the finished switch, with one input and two outputs. The connectors are 2-pin JST RCYs. The female end can be directly plugged into standard 2.54mm Dupont male connectors. I had to enlarge the existing holes on the switch PCB using a small file. Otherwise it's rather trivial to cut existing wires and solder new ones.
+The power source is first fed to the switch. The switched power is then fed to both the upper and the lower parts. The switch is a three way one. In addition to on and off, there is also a "try me" mode. In that mode, two extra wires are connected. I didn't use it in v2. But here I am connecting one of them to `GND` and the other to a GPIO pin so that we can read the mode. So here's the finished switch, with one input and two outputs. The connectors are 2-pin JST RCYs. The female end can be directly plugged into standard 2.54mm Dupont male connectors. I had to enlarge the existing holes on the switch PCB using a small file. Otherwise it's rather trivial to cut existing wires and solder new ones. The following picture was taken before soldering wires for the mode switch.
 
 ![switch](./media/IMG_0359.jpeg)
 
-I managed to solder everything in the lower part onto a 50mmx70mm perf board. It has the following interfaces:
+I soldered all electronic components onto a perf board. It has the following interfaces:
 
 * Power source
+* Mode switch
 * Left and right motors
 * Speaker
 * Connectors for the upper part
 
-![lower_pcb](./media/IMG_0357.jpeg)
+To help with soldering, I first drew all the connections using [Acorn](https://flyingmeat.com/acorn/), a simple image editing tool running on macos, capable of layer editing.
+
+![pcb_diagram](./schematics/perfboard.png)
+
+Here's the soldered perf board:
+
+![lower_pcb](./media/IMG_1171.jpeg)
 
 The PCB is then mounted to the chassis using a 3D printed mount.
 
-![mounted_pcb](./media/IMG_0828.jpeg)
+![mounted_pcb](./media/IMG_0376.jpeg)
 
 Now the upper part. I want to have a neat interface between the upper part and the lower part for easy assembly. So I use a small PCB as a hub and plug everything in the lower part into its pin headers. The PCB has a power bus connected to the switched power source. Then I use a flat ribbon cable to connect all the logic signals. The two IR receivers' signals are combined on the PCB and fed to the MCU via one pin. The MOSFET for the eye tilter motor is also integrated to the PCB. Here are the connections.
 
@@ -64,13 +71,10 @@ For the lower part:
 
 1. Verify both DC motors can turn both directions and the speed can be controlled with PWM pins
 
-To interact with the MCU after everything is mounted and connected, I made a USB-C cable without the +5V wire. This way, I can power everything with an external power source instead of the computer's USB hub. Instead of connecting the power input to the battery case, I leave the battery case disassembled and power it with a bench power. This way, I can leave the back open for easier debugging.
+![lower](./media/IMG_1213.mov)
 
-![lower](./media/IMG_0873.mov)
-
-Finally, before closing it up, I am exposing a USB-C port for uploading sketches and debugging through the serial port. To do this, I cut a hole at the bottom of the chassis, and mounted a panel-mount USB-C port (bought from AliExpress). Then soldered a male USB-C plug on it. Note that I am not connecting the V+ wire, to avoid accidental current backflow to the computer. So it needs to be powered by the batteries when uploading the sketch.
+Before closing everything up, I am also exposing a USB-C port for uploading sketches and debugging through the serial port. To do this, I cut a hole at the bottom of the chassis, and mounted a panel-mount USB-C port (bought from AliExpress). Then soldered a male USB-C plug on it. Note that I am not connecting the V+ wire, to avoid accidental current backflow to the computer. So it needs to be powered by the batteries when uploading the sketch.
 
 ![bottom_usb](./media/IMG_0888.jpeg)
-![top_usb](./media/IMG_0887.jpeg)
 
-Now all the mechanical parts are in placed and properly assembled. It's time to play with the firmware.
+Now all the mechanical parts are in place and properly assembled. It's time to play with the firmware.
