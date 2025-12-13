@@ -25,8 +25,8 @@ Instead of relying on Arduino IDE's library manager, I enlisted DYPlayer and IRR
 After enlisting these two libraries, I linked all files in their `src` directories under my sketch's `src` directory. Arduino Framework link all source files under `src` directory. I don't know if there is a way to add a local library. But creating symbolic links is pretty straight-forward with the following bash commands.
 
 ```
-for i in ../../third_party/Arduino-IRremote/src/* ; do; ln -s $i ; done
-for i in ../../third_party/dyplayer/src/* ; do; ln -s $i ; done
+for i in ../../third_party/Arduino-IRremote/src/* ; do ln -s $i ; done
+for i in ../../third_party/dyplayer/src/* ; do ln -s $i ; done
 ```
 
 ## Remote Control
